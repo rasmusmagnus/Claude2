@@ -1,6 +1,5 @@
 ﻿namespace Events.Events;
 
-public struct BoardUpdateEvent : IBoardStateEvent
+public struct BoardUpdateEvent(string BoardFenNotation) : IGameEvent
 {
-    
 }

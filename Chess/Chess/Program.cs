@@ -8,11 +8,11 @@ var builder = Host.CreateApplicationBuilder(args);
 
 // Register the event distributor as a singleton and expose it through both
 // the producer and consumer interfaces (it implements both).
-builder.Services.AddSingleton<EventDistributor<IBoardStateEvent>>();
-builder.Services.AddSingleton<IEventProducer<IBoardStateEvent>>(
-    sp => sp.GetRequiredService<EventDistributor<IBoardStateEvent>>());
-builder.Services.AddSingleton<IEventConsumer<IBoardStateEvent>>(
-    sp => sp.GetRequiredService<EventDistributor<IBoardStateEvent>>());
+builder.Services.AddSingleton<EventDistributor<IGameEvent>>();
+builder.Services.AddSingleton<IEventProducer<IGameEvent>>(
+    sp => sp.GetRequiredService<EventDistributor<IGameEvent>>());
+builder.Services.AddSingleton<IEventConsumer<IGameEvent>>(
+    sp => sp.GetRequiredService<EventDistributor<IGameEvent>>());
 
 // Register the board, which receives its dependencies via constructor injection.
 builder.Services.AddSingleton<Board>();

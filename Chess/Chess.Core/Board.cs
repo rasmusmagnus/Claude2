@@ -5,10 +5,10 @@ namespace Chess.Core;
 
 public class Board
 {
-    private readonly IEventProducer<IBoardStateEvent> _producer;
-    private readonly IEventConsumer<IBoardStateEvent> _consumer;
+    private readonly IEventProducer<IGameEvent> _producer;
+    private readonly IEventConsumer<IGameEvent> _consumer;
 
-    public Board(IEventProducer<IBoardStateEvent> producer, IEventConsumer<IBoardStateEvent> consumer)
+    public Board(IEventProducer<IGameEvent> producer, IEventConsumer<IGameEvent> consumer)
     {
         _producer = producer;
         _consumer = consumer;

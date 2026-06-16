@@ -1,5 +1,5 @@
 ﻿namespace Events.Events;
 
-public struct GameEndedEvent(GameResult result)
+public struct GameEndedEvent(GameResult result) : IGameEvent
 {
 }
