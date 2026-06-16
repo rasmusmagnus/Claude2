@@ -1,6 +1,6 @@
 ﻿namespace Events.Commands;
 
-public struct OfferDrawCommand
+public struct OfferDrawCommand : ICommand
 {
     
 }

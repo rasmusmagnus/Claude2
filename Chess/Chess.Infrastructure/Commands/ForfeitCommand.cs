@@ -1,6 +1,6 @@
 ﻿namespace Events.Commands;
 
-public struct ForfeitCommand
+public struct ForfeitCommand : ICommand
 {
     
 }

@@ -1,6 +1,6 @@
 ﻿namespace Events.Commands;
 
-public struct PrintBoardState
+public struct PrintBoardStateCommand  : ICommand
 {
     
 }

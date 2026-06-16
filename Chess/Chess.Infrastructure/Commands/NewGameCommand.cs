@@ -1,6 +1,6 @@
 ﻿namespace Events.Commands;
 
-public struct NewGameCommand
+public struct NewGameCommand  : ICommand
 {
     
 }

@@ -1,6 +1,6 @@
 ﻿namespace Events.Commands;
 
-public struct ResetGameCommand
+public struct ResetGameCommand : ICommand
 {
     
 }

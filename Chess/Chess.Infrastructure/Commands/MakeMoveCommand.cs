@@ -1,6 +1,8 @@
-﻿namespace Events.Commands;
+﻿using Events.Events;
 
-public struct MakeMoveCommand
+namespace Events.Commands;
+
+public struct MakeMoveCommand(IChessMove move) : ICommand
 {
     
 }
