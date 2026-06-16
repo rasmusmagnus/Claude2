@@ -1,0 +1,16 @@
+C:\Repos\Claude2\Chess\Chess.Core\bin\Debug\net9.0\Chess.Core.deps.json
+C:\Repos\Claude2\Chess\Chess.Core\bin\Debug\net9.0\Chess.Core.dll
+C:\Repos\Claude2\Chess\Chess.Core\bin\Debug\net9.0\Chess.Core.pdb
+C:\Repos\Claude2\Chess\Chess.Core\bin\Debug\net9.0\Chess.Infrastructure.dll
+C:\Repos\Claude2\Chess\Chess.Core\bin\Debug\net9.0\Chess.Infrastructure.pdb
+C:\Repos\Claude2\Chess\Chess.Core\obj\Debug\net9.0\Chess.Core.csproj.AssemblyReference.cache
+C:\Repos\Claude2\Chess\Chess.Core\obj\Debug\net9.0\Chess.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\Repos\Claude2\Chess\Chess.Core\obj\Debug\net9.0\Chess.Core.AssemblyInfoInputs.cache
+C:\Repos\Claude2\Chess\Chess.Core\obj\Debug\net9.0\Chess.Core.AssemblyInfo.cs
+C:\Repos\Claude2\Chess\Chess.Core\obj\Debug\net9.0\Chess.Core.csproj.CoreCompileInputs.cache
+C:\Repos\Claude2\Chess\Chess.Core\obj\Debug\net9.0\Chess.Core.sourcelink.json
+C:\Repos\Claude2\Chess\Chess.Core\obj\Debug\net9.0\Chess.Core.csproj.Up2Date
+C:\Repos\Claude2\Chess\Chess.Core\obj\Debug\net9.0\Chess.Core.dll
+C:\Repos\Claude2\Chess\Chess.Core\obj\Debug\net9.0\refint\Chess.Core.dll
+C:\Repos\Claude2\Chess\Chess.Core\obj\Debug\net9.0\Chess.Core.pdb
+C:\Repos\Claude2\Chess\Chess.Core\obj\Debug\net9.0\ref\Chess.Core.dll
