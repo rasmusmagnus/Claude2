@@ -4,3 +4,13 @@
 
 /.vs/Skak/CopilotIndices/17.14.1569.27729
 /.vs
+/.idea/encodings.xml
+/.idea/indexLayout.xml
+/.idea/.gitignore
+/.idea/vcs.xml
+/Chess/Chess/obj/Debug/net9.0/Chess.AssemblyInfoInputs.cache
+/Chess/Chess/obj/Debug/net9.0/Chess.assets.cache
+/Chess/Chess/obj/Debug/net9.0/Chess.GeneratedMSBuildEditorConfig.editorconfig
+/Chess/Chess/obj/Release/net9.0/Chess.assets.cache
+/Chess/Chess/obj/Release/net9.0/Chess.AssemblyInfoInputs.cache
+/Chess/Chess/obj/Release/net9.0/Chess.GeneratedMSBuildEditorConfig.editorconfig
