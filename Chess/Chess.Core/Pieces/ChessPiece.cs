@@ -1,8 +1,8 @@
 ﻿namespace Chess.Core.Pieces {
-	internal abstract class ChessPiece {
-		protected readonly Colour colour;
+	public abstract class ChessPiece {
+		public readonly Colour colour;
 
-		protected ChessPiece(Colour colour) {
+		public ChessPiece(Colour colour) {
 			this.colour = colour;
 		}
 

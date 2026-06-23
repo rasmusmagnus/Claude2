@@ -1,5 +1,5 @@
 ﻿namespace Chess.Core.Pieces {
-	internal enum Colour {
+	public enum Colour {
 		White, Black
 	}
 }

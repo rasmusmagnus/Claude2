@@ -1,64 +1,161 @@
-﻿using Events;
+﻿using Chess.Core.Pieces;
+using Events;
 using Events.Events;
 
 namespace Chess.Core;
 
-public class Board
-{
-    private readonly IEventProducer<IGameEvent> _producer;
-    private readonly IEventConsumer<IGameEvent> _consumer;
+public class Board {
+	private readonly IEventProducer<IGameEvent> _producer;
+	private readonly IEventConsumer<IGameEvent> _consumer;
 
-    public static string StartBoardFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-    
-    public Board(IEventProducer<IGameEvent> producer, IEventConsumer<IGameEvent> consumer)
-    {
-        _producer = producer;
-        _consumer = consumer;
-    }
+	public static string StartBoardFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-    private Board(string producer)
-    {
-        throw new NotImplementedException();
-    }
 
-    public Board GetBoardFromFen(string fen)
-    {
-        return new Board(fen);
-    }
 
-    public void MakeMove(IChessMove move)
-    {
-    }
+	public BoardState customState;
 
-    public static string ToFen(Board board)
-    {
-        return StartBoardFen;
-    }
+	public Board(IEventProducer<IGameEvent> producer, IEventConsumer<IGameEvent> consumer) {
+		_producer = producer;
+		_consumer = consumer;
+	}
 
-    public async Task RunAsync(CancellationToken token)
-    {
-        var evt = new BoardUpdateEvent();
+	private Board(string producer) {
+		throw new NotImplementedException();
+	}
 
-        _producer.SubmitEvent(evt);
+	public Board GetBoardFromFen(string fen) {
 
-        var reader = _consumer.GetReader();
 
-        while (!token.IsCancellationRequested)
-        {
-            var res = await reader.ReadAsync(token);
-            switch(res)
-            {
-                case BoardUpdateEvent boardUpdateEvent:
-                {
-                    HandleBoardUpdateEvent(boardUpdateEvent);
-                    break;
-                }
-            }
-        }
-    }
+		return new Board(fen);
+	}
 
-    private void HandleBoardUpdateEvent(BoardUpdateEvent boardUpdateEvent)
-    {
-        throw new NotImplementedException();
-    }
+	public void MakeMove(IChessMove move) {
+	}
+
+	public string ToFen(Board board) {
+		return customState.GetPiecesFenPart();
+	}
+
+	public async Task RunAsync(CancellationToken token) {
+		var evt = new BoardUpdateEvent();
+
+		_producer.SubmitEvent(evt);
+
+		var reader = _consumer.GetReader();
+
+		while (!token.IsCancellationRequested) {
+			var res = await reader.ReadAsync(token);
+			switch (res) {
+				case BoardUpdateEvent boardUpdateEvent: {
+						HandleBoardUpdateEvent(boardUpdateEvent);
+						break;
+					}
+			}
+		}
+	}
+
+	private void HandleBoardUpdateEvent(BoardUpdateEvent boardUpdateEvent) {
+		throw new NotImplementedException();
+	}
+}
+
+public class BoardState {
+	public ChessPiece?[][] state;
+
+	public ChessPiece? this[string index, int index2] {
+		get {
+			int indexInt = index.ToLower() switch
+			{
+				"a" => 0,
+				"b" => 1,
+				"c" => 2,
+				"d" => 3,
+				"e" => 4,
+				"f" => 5,
+				"g" => 6,
+				"h" => 7,
+				_ => throw new ArgumentException("Invalid index")
+			};
+
+			return state[indexInt][index2];
+		}
+	}
+
+	public BoardState(string fenString) {
+		var result = new ChessPiece?[8][];
+		var trimmedFen = fenString.Split(" ")[0];
+
+		var fenRows = trimmedFen.Split("/");
+
+		for (int i = 0;
+		i < fenRows.Length; i++) {
+			var file = fenRows[i];
+			for (int j = 0; j < file.Length; j++) {
+				var square = file[j];
+				result[i] = new ChessPiece?[8];
+
+				if (int.TryParse(square.ToString(), out var count)) {
+					for (int k = 0; k < count; k++) {
+						result[i][j] = null;
+						j++;
+
+					}
+				} else {
+					var colour = square.ToString().ToLower().Equals(square.ToString()) ? Colour.Black : Colour.White;
+					ChessPiece piece;
+					switch (square.ToString().ToLower()) {
+						case "r":
+							piece = new Rook(colour); break;
+						case "p":
+							piece = new Pawn(colour); break;
+						case "b":
+							piece = new Bishop(colour); break;
+						case "n":
+							piece = new Knight(colour); break;
+						case "k":
+							piece = new King(colour); break;
+						case "q":
+							piece = new Queen(colour); break;
+						default:
+							throw new Exception("wft");
+					}
+
+					result[i][j] = piece;
+				}
+
+			}
+
+		}
+	}
+
+	public string GetPiecesFenPart() {
+		var result = "";
+		foreach (var file in state) {
+			var counter = 0;
+			foreach (var square in file) {
+
+				if (square != null) {
+					if (counter != 0) {
+						result += counter;
+						counter = 0;
+					}
+
+					result += square.ToFenCharecter();
+				} else {
+					counter++;
+				}
+
+
+			}
+			if (counter != 0) {
+				result += counter;
+			}
+
+			result += "/";
+
+
+		}
+
+		return result[^1].ToString();
+	}
 }
