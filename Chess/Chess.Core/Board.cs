@@ -1,5 +1,4 @@
-﻿using Chess.Core.Pieces;
-using Events;
+﻿using Events;
 using Events.Events;
 
 namespace Chess.Core;
@@ -10,13 +9,57 @@ public class Board {
 
 	public static string StartBoardFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
+	public bool WhiteHasMove;
+
+	public CastlingState whiteCastlingState;
+	public CastlingState blackCastlingState;
 
 
-	public BoardState customState;
+	public BoardPositions Positions;
+
+	public List<string> stateHistory;
 
 	public Board(IEventProducer<IGameEvent> producer, IEventConsumer<IGameEvent> consumer) {
 		_producer = producer;
 		_consumer = consumer;
+		Positions = new BoardPositions(StartBoardFen);
+		stateHistory = new List<string>();
+		stateHistory.Add(ToFen());
+		WhiteHasMove = GetTurnFromFen(StartBoardFen);
+		var castlingStates = GetCaslingStatesFromFen(StartBoardFen);
+		whiteCastlingState = castlingStates.white;
+		blackCastlingState = castlingStates.black;
+
+	}
+
+	public bool GetTurnFromFen(string fenString) {
+		var turnHolderString = fenString.Split(" ")[1].ToLower();
+		return turnHolderString == "w";
+	}
+
+	public (CastlingState white, CastlingState black) GetCaslingStatesFromFen(string fen) {
+		var whiteRes = new CastlingState();
+		var blackResult = new CastlingState();
+
+
+		var castling = fen.Split(" ")[2].ToLower();
+
+		if (!castling.Contains("Q")) {
+			whiteRes.RemoveQueensideCastlingRights();
+		}
+		if (!castling.Contains("K")) {
+			whiteRes.RemoveKingsideCastlingRights();
+		}
+		if (!castling.Contains("q")) {
+			blackResult.RemoveQueensideCastlingRights();
+		}
+		if (!castling.Contains("k")) {
+			blackResult.RemoveKingsideCastlingRights();
+		}
+
+
+		return (whiteRes, blackResult);
+
 	}
 
 	private Board(string producer) {
@@ -30,10 +73,53 @@ public class Board {
 	}
 
 	public void MakeMove(IChessMove move) {
+		throw new NotImplementedException();
+
+		stateHistory.Add(ToFen());
 	}
 
-	public string ToFen(Board board) {
-		return customState.GetPiecesFenPart();
+	public string ToFen() {
+
+		var res = Positions.GetPiecesFenPart();
+		res += " ";
+		res += WhiteHasMove ? "w" : "b";
+		res += " ";
+		res += FenFromCastlingStates();
+
+
+		return res;
+	}
+
+	private string FenFromCastlingStates()
+	{
+		var res = "";
+
+		if (whiteCastlingState.KingsideAvailable)
+		{
+			res += "K";
+		}
+
+		if (whiteCastlingState.QueenSideAvailable)
+		{
+			res += "Q";
+		}
+
+		if (blackCastlingState.KingsideAvailable)
+		{
+			res += "k";
+		}
+
+		if (blackCastlingState.QueenSideAvailable)
+		{
+			res += "q";
+		}
+
+		if (res == "")
+		{
+			res += "-";
+		}
+
+		return res;
 	}
 
 	public async Task RunAsync(CancellationToken token) {
@@ -59,106 +145,18 @@ public class Board {
 	}
 }
 
-public class BoardState {
-	public ChessPiece?[][] state;
+public class CastlingState {
+	public bool KingsideAvailable { get; private set; } = true;
+	public bool QueenSideAvailable { get; private set; } = true;
 
-	public ChessPiece? this[string index, int index2] {
-		get {
-			int indexInt = index.ToLower() switch
-			{
-				"a" => 0,
-				"b" => 1,
-				"c" => 2,
-				"d" => 3,
-				"e" => 4,
-				"f" => 5,
-				"g" => 6,
-				"h" => 7,
-				_ => throw new ArgumentException("Invalid index")
-			};
-
-			return state[index2 - 1][indexInt];
-		}
+	public void RemoveKingsideCastlingRights() {
+		KingsideAvailable = false;
 	}
 
-	public BoardState(string fenString) {
-		var result = new ChessPiece?[8][];
-		var trimmedFen = fenString.Split(" ")[0];
-
-		var fenRows = trimmedFen.Split("/");
-
-		for (int i = 0;
-		i < fenRows.Length; i++) {
-			var file = fenRows[i];
-			result[7 - i] = new ChessPiece?[8];
-			var squareIndex = 0;
-			for (int j = 0; j < file.Length; j++) {
-				var square = file[j];
-
-
-				if (int.TryParse(square.ToString(), out var count)) {
-					for (int k = 0; k < count; k++) {
-						result[7 - i][squareIndex] = null;
-						squareIndex++;
-					}
-				} else {
-					var colour = square.ToString().ToLower().Equals(square.ToString()) ? Colour.Black : Colour.White;
-					ChessPiece piece;
-					switch (square.ToString().ToLower()) {
-						case "r":
-							piece = new Rook(colour); break;
-						case "p":
-							piece = new Pawn(colour); break;
-						case "b":
-							piece = new Bishop(colour); break;
-						case "n":
-							piece = new Knight(colour); break;
-						case "k":
-							piece = new King(colour); break;
-						case "q":
-							piece = new Queen(colour); break;
-						default:
-							throw new Exception("wfts");
-					}
-
-					result[7 - i][squareIndex] = piece;
-					squareIndex++;
-				}
-
-			}
-
-		}
-		state = result;
+	public void RemoveQueensideCastlingRights() {
+		QueenSideAvailable = false;
 	}
 
-	public string GetPiecesFenPart() {
-		var result = "";
-		foreach (var file in state.Reverse()) {
-			var counter = 0;
-			foreach (var square in file) {
 
-				if (square != null) {
-					if (counter != 0) {
-						result += counter;
-						counter = 0;
-					}
-
-					result += square.ToFenCharecter();
-				} else {
-					counter++;
-				}
-
-
-			}
-			if (counter != 0) {
-				result += counter;
-			}
-
-			result += "/";
-
-
-		}
-
-		return result[..^1];
-	}
 }
+
