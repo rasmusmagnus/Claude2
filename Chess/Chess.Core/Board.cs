@@ -90,15 +90,16 @@ public class BoardState {
 		for (int i = 0;
 		i < fenRows.Length; i++) {
 			var file = fenRows[i];
+			result[i] = new ChessPiece?[8];
+			var squareIndex = 0;
 			for (int j = 0; j < file.Length; j++) {
 				var square = file[j];
-				result[i] = new ChessPiece?[8];
+
 
 				if (int.TryParse(square.ToString(), out var count)) {
 					for (int k = 0; k < count; k++) {
-						result[i][j] = null;
-						j++;
-
+						result[i][squareIndex] = null;
+						squareIndex++;
 					}
 				} else {
 					var colour = square.ToString().ToLower().Equals(square.ToString()) ? Colour.Black : Colour.White;
@@ -120,12 +121,14 @@ public class BoardState {
 							throw new Exception("wft");
 					}
 
-					result[i][j] = piece;
+					result[i][squareIndex] = piece;
+					squareIndex++;
 				}
 
 			}
 
 		}
+		state = result;
 	}
 
 	public string GetPiecesFenPart() {
@@ -156,6 +159,6 @@ public class BoardState {
 
 		}
 
-		return result[^1].ToString();
+		return result[..^1];
 	}
 }
