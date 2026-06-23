@@ -77,7 +77,7 @@ public class BoardState {
 				_ => throw new ArgumentException("Invalid index")
 			};
 
-			return state[indexInt][index2 - 1];
+			return state[index2 - 1][indexInt];
 		}
 	}
 
