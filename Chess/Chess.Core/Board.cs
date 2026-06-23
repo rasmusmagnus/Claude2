@@ -77,7 +77,7 @@ public class BoardState {
 				_ => throw new ArgumentException("Invalid index")
 			};
 
-			return state[indexInt][index2];
+			return state[indexInt][index2 - 1];
 		}
 	}
 
@@ -90,7 +90,7 @@ public class BoardState {
 		for (int i = 0;
 		i < fenRows.Length; i++) {
 			var file = fenRows[i];
-			result[i] = new ChessPiece?[8];
+			result[7 - i] = new ChessPiece?[8];
 			var squareIndex = 0;
 			for (int j = 0; j < file.Length; j++) {
 				var square = file[j];
@@ -98,7 +98,7 @@ public class BoardState {
 
 				if (int.TryParse(square.ToString(), out var count)) {
 					for (int k = 0; k < count; k++) {
-						result[i][squareIndex] = null;
+						result[7 - i][squareIndex] = null;
 						squareIndex++;
 					}
 				} else {
@@ -118,10 +118,10 @@ public class BoardState {
 						case "q":
 							piece = new Queen(colour); break;
 						default:
-							throw new Exception("wft");
+							throw new Exception("wfts");
 					}
 
-					result[i][squareIndex] = piece;
+					result[7 - i][squareIndex] = piece;
 					squareIndex++;
 				}
 
@@ -133,7 +133,7 @@ public class BoardState {
 
 	public string GetPiecesFenPart() {
 		var result = "";
-		foreach (var file in state) {
+		foreach (var file in state.Reverse()) {
 			var counter = 0;
 			foreach (var square in file) {
 

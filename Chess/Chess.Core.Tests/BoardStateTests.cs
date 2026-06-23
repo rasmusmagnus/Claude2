@@ -1,3 +1,5 @@
+using Chess.Core.Pieces;
+
 namespace Chess.Core.Tests;
 
 public class BoardStateTests {
@@ -10,5 +12,14 @@ public class BoardStateTests {
 	public void CheckEasyFen(string fen) {
 		var board = new BoardState(fen);
 		Assert.Equal(fen.Split(" ")[0], board.GetPiecesFenPart());
+	}
+
+	[Fact]
+	public void ByPosition() {
+		var fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+		var board = new BoardState(fen);
+
+		var piece = board["d", 5];
+		Assert.True(piece is Pawn);
 	}
 }

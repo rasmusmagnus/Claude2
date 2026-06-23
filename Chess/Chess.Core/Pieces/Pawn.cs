@@ -1,5 +1,5 @@
 ﻿namespace Chess.Core.Pieces {
-	internal class Pawn : ChessPiece {
+	public class Pawn : ChessPiece {
 		public Pawn(Colour colour) : base(colour) {
 		}
 
