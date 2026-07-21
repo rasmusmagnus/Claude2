@@ -80,7 +80,7 @@
         // changes when the core domain emits a BoardUpdateEvent. An unaccepted
         // (future: illegal) move produces no event, so the piece visibly stays put.
         var move = new Move(from, target);
-        Logger.LogInformation("Submitting move {Move}", move.MoveInAlgebraicNotation);
+        Logger.LogInformation("Submitting move {Move}", move);
         Commands.SubmitEvent(new MakeMoveCommand(move));
     }
 

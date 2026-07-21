@@ -8,5 +8,4 @@ namespace Events;
 /// </summary>
 public sealed record Move(string From, string To) : IChessMove
 {
-    public string MoveInAlgebraicNotation => $"{From}{To}";
 }

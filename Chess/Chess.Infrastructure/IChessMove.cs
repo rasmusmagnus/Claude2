@@ -3,5 +3,6 @@ namespace Events;
 
 public interface IChessMove
 {
-    string MoveInAlgebraicNotation { get; }
+    string From { get; init; }
+    string To { get; init; }
 }

@@ -13,7 +13,7 @@ public class BoardPositionsTests {
 		var board = new BoardPositions(fen);
 		Assert.Equal(fen.Split(" ")[0], board.GetPiecesFenPart());
 	}
-
+	
 	[Fact]
 	public void ByPosition() {
 		var fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";

@@ -13,26 +13,56 @@ public class Board {
 
 	public bool WhiteHasMove;
 
-	public CastlingState whiteCastlingState;
-	public CastlingState blackCastlingState;
+	private CastlingState _whiteCastlingState = new();
+	private CastlingState _blackCastlingState = new();
 
-
+	private int _halfMoves = 0;
+	private int _FullMoves = 1;
+	
 	public BoardPositions Positions;
 
 	public List<string> stateHistory;
 
-	public Board(IEventProducer<IGameEvent> producer, IEventConsumer<IGameEvent> consumer) {
+	public Board(IMoveValidator moveValidator, IEventProducer<IGameEvent> producer, IEventConsumer<ICommand> consumer) {
+		_moveValidator = moveValidator;
 		_producer = producer;
 		_consumer = consumer;
 		Positions = new BoardPositions(StartBoardFen);
 		stateHistory = new List<string>();
-		stateHistory.Add(ToFen());
 		WhiteHasMove = GetTurnFromFen(StartBoardFen);
 		var castlingStates = GetCaslingStatesFromFen(StartBoardFen);
-		whiteCastlingState = castlingStates.white;
-		blackCastlingState = castlingStates.black;
-
+		_whiteCastlingState = castlingStates.white;
+		_blackCastlingState = castlingStates.black;
+		stateHistory.Add(ToFen());
 	}
+	public async Task RunAsync(CancellationToken token) {
+		var evt = new BoardUpdateEvent();
+
+		_producer.SubmitEvent(evt);
+
+		var reader = _consumer.GetReader();
+
+		while (!token.IsCancellationRequested) {
+			var res = await reader.ReadAsync(token);
+			switch (res) {
+				case MakeMoveCommand moveCommand:
+				{
+					HandleMoveCommand(moveCommand);
+					break;
+				}
+			}
+		}
+	}
+
+	private void HandleMoveCommand(MakeMoveCommand moveCommand)
+	{
+		if (!_moveValidator.Validate(moveCommand))
+			return;
+		
+		MakeMove(moveCommand.Move);
+		_producer.SubmitEvent(new BoardUpdateEvent(ToFen()));
+	}
+
 
 	public bool GetTurnFromFen(string fenString) {
 		var turnHolderString = fenString.Split(" ")[1].ToLower();
@@ -43,8 +73,7 @@ public class Board {
 		var whiteRes = new CastlingState();
 		var blackResult = new CastlingState();
 
-
-		var castling = fen.Split(" ")[2].ToLower();
+		var castling = fen.Split(" ")[2];
 
 		if (!castling.Contains("Q")) {
 			whiteRes.RemoveQueensideCastlingRights();
@@ -58,60 +87,66 @@ public class Board {
 		if (!castling.Contains("k")) {
 			blackResult.RemoveKingsideCastlingRights();
 		}
-
-
+		
 		return (whiteRes, blackResult);
-
 	}
 
 	private Board(string producer) {
 		throw new NotImplementedException();
 	}
 
-	public Board GetBoardFromFen(string fen) {
-
-
+	public Board GetBoardFromFen(string fen) 
+	{
 		return new Board(fen);
 	}
 
-	public void MakeMove(IChessMove move) {
-		throw new NotImplementedException();
-
+	public void MakeMove(IChessMove move)
+	{
+		Positions.MovePieces(move.From, move.To);
 		stateHistory.Add(ToFen());
 	}
 
-	public string ToFen() {
-
+	public string ToFen() 
+	{
 		var res = Positions.GetPiecesFenPart();
 		res += " ";
 		res += WhiteHasMove ? "w" : "b";
 		res += " ";
 		res += FenFromCastlingStates();
-
-
+		res += " ";
+		res += GetEnPassantTiles();
+		res += " ";
+		res += _halfMoves;
+		res += " ";
+		res += _FullMoves;
 		return res;
+	}
+
+	private string GetEnPassantTiles()
+	{
+		return "-";
 	}
 
 	private string FenFromCastlingStates()
 	{
 		var res = "";
 
-		if (whiteCastlingState.KingsideAvailable)
+		if (_whiteCastlingState.KingsideAvailable)
 		{
 			res += "K";
 		}
 
-		if (whiteCastlingState.QueenSideAvailable)
+		if (_whiteCastlingState.QueenSideAvailable)
 		{
 			res += "Q";
 		}
 
-		if (blackCastlingState.KingsideAvailable)
+		if (_blackCastlingState.KingsideAvailable)
 		{
 			res += "k";
 		}
 
-		if (blackCastlingState.QueenSideAvailable)
+		if (_blackCastlingState.QueenSideAvailable)
 		{
 			res += "q";
 		}
@@ -122,28 +157,6 @@ public class Board {
 		}
 
 		return res;
-	}
-
-	public async Task RunAsync(CancellationToken token) {
-		var evt = new BoardUpdateEvent();
-
-		_producer.SubmitEvent(evt);
-
-		var reader = _consumer.GetReader();
-
-		while (!token.IsCancellationRequested) {
-			var res = await reader.ReadAsync(token);
-			switch (res) {
-				case BoardUpdateEvent boardUpdateEvent: {
-						HandleBoardUpdateEvent(boardUpdateEvent);
-						break;
-					}
-			}
-		}
-	}
-
-	private void HandleBoardUpdateEvent(BoardUpdateEvent boardUpdateEvent) {
-		throw new NotImplementedException();
 	}
 }
 
