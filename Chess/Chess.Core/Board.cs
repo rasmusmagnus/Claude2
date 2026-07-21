@@ -36,7 +36,7 @@ public class Board {
 		stateHistory.Add(ToFen());
 	}
 	public async Task RunAsync(CancellationToken token) {
-		var evt = new BoardUpdateEvent();
+		var evt = new BoardUpdateEvent(ToFen());
 
 		_producer.SubmitEvent(evt);
 

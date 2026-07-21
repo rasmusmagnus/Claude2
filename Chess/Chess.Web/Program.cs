@@ -1,8 +1,12 @@
+using System.Diagnostics;
+using Chess.Core;
 using Chess.Web.Components;
 using Chess.Web.Services;
 using Events;
 using Events.Commands;
 using Events.Events;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +34,13 @@ builder.Services.AddSingleton<IEventProducer<IGameEvent>>(
 builder.Services.AddSingleton<IEventConsumer<IGameEvent>>(
     sp => sp.GetRequiredService<EventDistributor<IGameEvent>>());
 
+// The core domain engine. It owns all game logic: it consumes the commands the
+// UI submits, applies moves, and emits BoardUpdateEvents. Move legality is the
+// validator's job (today AllOkMoveValidator accepts everything).
+builder.Services.AddSingleton<IMoveValidator, AllOkMoveValidator>();
+builder.Services.AddSingleton<Board>();
+builder.Services.AddHostedService<BoardEngineService>();
+
 // The UI view-model: consumes events, tracks state for rendering/export,
 // multicasts changes to circuits. It never mutates the board.
 builder.Services.AddSingleton<BoardStateStore>();
@@ -53,5 +64,25 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+// In development, pop the board open in the user's default browser as soon as
+// the server is listening — so "just run the app" shows the board with no extra
+// step, regardless of whether it was started via `dotnet run`, `dotnet watch`,
+// or an IDE. Set CHESS_NO_BROWSER=1 to opt out.
+if (app.Environment.IsDevelopment() &&
+    Environment.GetEnvironmentVariable("CHESS_NO_BROWSER") != "1")
+{
+    app.Lifetime.ApplicationStarted.Register(() =>
+    {
+        var url = app.Services.GetRequiredService<IServer>()
+            .Features.Get<IServerAddressesFeature>()?.Addresses.FirstOrDefault();
+
+        if (!string.IsNullOrEmpty(url))
+        {
+            try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
+            catch { /* best-effort: ignore if no browser is available */ }
+        }
+    });
+}
 
 app.Run();

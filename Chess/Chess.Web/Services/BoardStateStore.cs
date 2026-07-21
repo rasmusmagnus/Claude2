@@ -52,6 +52,10 @@ public sealed class BoardStateStore : BackgroundService
             switch (evt)
             {
                 case BoardUpdateEvent update:
+                    // The engine emits an empty update on startup as a "ready"
+                    // ping; ignore FEN-less updates so rendering keeps its default.
+                    if (string.IsNullOrWhiteSpace(update.BoardFenNotation))
+                        break;
                     CurrentFen = update.BoardFenNotation;
                     lock (_gate) _history.Add(update.BoardFenNotation);
                     Changed?.Invoke();

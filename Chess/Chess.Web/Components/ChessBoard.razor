@@ -21,8 +21,9 @@
                  role="gridcell"
                  aria-label="@square"
                  @key="square"
-                 @ondrop="() => OnDrop(square)"
-                 @ondragover:preventDefault="true">
+                 ondragenter="event.preventDefault()"
+                 ondragover="event.preventDefault()"
+                 @ondrop="() => OnDrop(square)">
 
                 @if (f == 0)
                 {
