@@ -1,0 +1,69 @@
+@page "/"
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using Events
+@using Events.Commands
+@using Chess.Web.Services
+@implements IDisposable
+@inject BoardStateStore Store
+@inject IEventProducer<ICommand> Commands
+
+<PageTitle>Chess</PageTitle>
+
+<div class="game">
+    <ChessBoard />
+
+    <aside class="panel">
+        <h1>Chess</h1>
+        <p class="hint">Drag a piece to submit a move. The board only updates when
+            the core domain accepts the move and emits a board-update event — this
+            UI never applies moves itself.</p>
+
+        <div class="controls">
+            <button class="btn" @onclick="NewGame">New game</button>
+            <button class="btn" @onclick="Flush">Flush state</button>
+        </div>
+
+        <h2>Exported state</h2>
+        <p class="hint">Copy this into a <code>[Theory]</code> to seed a unit test.
+            It is also written to the server console.</p>
+        <textarea class="export" readonly rows="6"
+                  placeholder="Press &quot;Flush state&quot; to capture the current board history…">@_export</textarea>
+
+        <h2>Board history <span class="count">(@_history.Count)</span></h2>
+        <ol class="history">
+            @for (var i = _history.Count - 1; i >= 0; i--)
+            {
+                <li><code>@_history[i]</code></li>
+            }
+        </ol>
+        @if (_history.Count == 0)
+        {
+            <p class="empty">No board-update events received yet.</p>
+        }
+    </aside>
+</div>
+
+@code {
+    private IReadOnlyList<string> _history = System.Array.Empty<string>();
+    private string _export = "";
+
+    protected override void OnInitialized()
+    {
+        Store.Changed += OnStoreChanged;
+        _history = Store.History;
+    }
+
+    private void OnStoreChanged() => InvokeAsync(() =>
+    {
+        _history = Store.History;
+        StateHasChanged();
+    });
+
+    // The only two things the UI does: submit a move-affecting command…
+    private void NewGame() => Commands.SubmitEvent(new NewGameCommand());
+
+    // …and flush/export the observed state for test authoring.
+    private void Flush() => _export = Store.Flush();
+
+    public void Dispose() => Store.Changed -= OnStoreChanged;
+}

@@ -1,11 +1,13 @@
 ﻿using Events;
+using Events.Commands;
 using Events.Events;
 
 namespace Chess.Core;
 
 public class Board {
+	private readonly IMoveValidator _moveValidator;
 	private readonly IEventProducer<IGameEvent> _producer;
-	private readonly IEventConsumer<IGameEvent> _consumer;
+	private readonly IEventConsumer<ICommand> _consumer;
 
 	public static string StartBoardFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
