@@ -1,0 +1,117 @@
+@using Events
+@using Events.Commands
+@using Chess.Web.Services
+@implements IDisposable
+@inject BoardStateStore Store
+@inject IEventProducer<ICommand> Commands
+@inject ILogger<ChessBoard> Logger
+
+<div class="board" role="grid" aria-label="Chess board">
+    @for (var rank = 7; rank >= 0; rank--)
+    {
+        var r = rank;
+        @for (var file = 0; file < 8; file++)
+        {
+            var f = file;
+            var square = SquareName(f, r);
+            var piece = _grid[r][f];
+            var isDark = (f + r) % 2 == 0;
+
+            <div class="square @(isDark ? "dark" : "light")"
+                 role="gridcell"
+                 aria-label="@square"
+                 @key="square"
+                 @ondrop="() => OnDrop(square)"
+                 @ondragover:preventDefault="true">
+
+                @if (f == 0)
+                {
+                    <span class="coord rank">@(r + 1)</span>
+                }
+                @if (r == 0)
+                {
+                    <span class="coord file">@((char)('a' + f))</span>
+                }
+
+                @if (piece != '\0')
+                {
+                    <span class="piece @(char.IsUpper(piece) ? "white" : "black")"
+                          draggable="true"
+                          @ondragstart="() => OnDragStart(square)"
+                          aria-label="@PieceName(piece)">
+                        @Glyph(piece)
+                    </span>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private char[][] _grid = Fen.ToGrid(Fen.StartPosition);
+    private string? _dragFrom;
+
+    protected override void OnInitialized()
+    {
+        Store.Changed += OnStoreChanged;
+        Refresh();
+    }
+
+    private void OnStoreChanged() => InvokeAsync(() =>
+    {
+        Refresh();
+        StateHasChanged();
+    });
+
+    private void Refresh() => _grid = Fen.ToGrid(Store.CurrentFen);
+
+    private void OnDragStart(string square) => _dragFrom = square;
+
+    private void OnDrop(string target)
+    {
+        var from = _dragFrom;
+        _dragFrom = null;
+
+        // Ignore no-op drops; the engine is the source of truth for everything else.
+        if (from is null || from == target)
+            return;
+
+        // Fire-and-forget intent. We do NOT move the piece here — the board only
+        // changes when the core domain emits a BoardUpdateEvent. An unaccepted
+        // (future: illegal) move produces no event, so the piece visibly stays put.
+        var move = new Move(from, target);
+        Logger.LogInformation("Submitting move {Move}", move.MoveInAlgebraicNotation);
+        Commands.SubmitEvent(new MakeMoveCommand(move));
+    }
+
+    private static string SquareName(int file, int rank) => $"{(char)('a' + file)}{rank + 1}";
+
+    private static string Glyph(char piece) => char.ToLowerInvariant(piece) switch
+    {
+        'k' => "♚",
+        'q' => "♛",
+        'r' => "♜",
+        'b' => "♝",
+        'n' => "♞",
+        'p' => "♟",
+        _ => ""
+    };
+
+    private static string PieceName(char piece)
+    {
+        var colour = char.IsUpper(piece) ? "White" : "Black";
+        var kind = char.ToLowerInvariant(piece) switch
+        {
+            'k' => "king",
+            'q' => "queen",
+            'r' => "rook",
+            'b' => "bishop",
+            'n' => "knight",
+            'p' => "pawn",
+            _ => "piece"
+        };
+        return $"{colour} {kind}";
+    }
+
+    public void Dispose() => Store.Changed -= OnStoreChanged;
+}

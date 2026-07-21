@@ -1,20 +1,21 @@
 ﻿using Chess.Core.Pieces;
 using Events;
+using Events.Commands;
 using Events.Events;
 
 namespace Chess.Core;
 
 public class Board {
+	private readonly IMoveValidator _moveValidator;
 	private readonly IEventProducer<IGameEvent> _producer;
-	private readonly IEventConsumer<IGameEvent> _consumer;
+	private readonly IEventConsumer<ICommand> _consumer;
 
 	public static string StartBoardFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-
-
-
+	
 	public BoardState customState;
 
-	public Board(IEventProducer<IGameEvent> producer, IEventConsumer<IGameEvent> consumer) {
+	public Board(IMoveValidator moveValidator, IEventProducer<IGameEvent> producer, IEventConsumer<ICommand> consumer) {
+		_moveValidator = moveValidator;
 		_producer = producer;
 		_consumer = consumer;
 	}
@@ -46,12 +47,18 @@ public class Board {
 		while (!token.IsCancellationRequested) {
 			var res = await reader.ReadAsync(token);
 			switch (res) {
-				case BoardUpdateEvent boardUpdateEvent: {
-						HandleBoardUpdateEvent(boardUpdateEvent);
-						break;
-					}
+				case MakeMoveCommand moveCommand:
+				{
+					HandleMakeMove(moveCommand);
+					break;
+				}
 			}
 		}
+	}
+
+	private void HandleMakeMove(MakeMoveCommand moveCommand)
+	{
+							
 	}
 
 	private void HandleBoardUpdateEvent(BoardUpdateEvent boardUpdateEvent) {
