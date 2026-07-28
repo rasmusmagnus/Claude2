@@ -5,6 +5,14 @@ namespace Chess.Core.Pieces {
 		public King(Colour colour) : base(colour) {
 		}
 
+		public static readonly Position WhiteStartPosition = new Position('e', 1);
+		public static readonly Position BlackStartPosition = new('e', 8);
+
+		private Position StartPosition()
+		{
+			return colour == Colour.White ? WhiteStartPosition : BlackStartPosition;
+		}
+
 		public override string ToFenCharecter() {
 			return colour == Colour.White ? "K" : "k";
 		}
@@ -28,6 +36,12 @@ namespace Chess.Core.Pieces {
 					
 					res.Add(new Position(resultingFile, resultingRank));
 				}
+			}
+
+			if (startPosition == StartPosition())
+			{
+				Position.AddIfInBounds(rankAsIndex, fileAsIndex - 2, res);
+				Position.AddIfInBounds(rankAsIndex, fileAsIndex + 2, res);
 			}
 			return res;
 		}

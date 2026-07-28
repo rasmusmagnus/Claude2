@@ -15,7 +15,7 @@ namespace Chess.Core.Pieces {
 			var fileAsIndex = startPosition.FileToIndex();
 			var rankAsIndex = startPosition.Rank;
 			var moveDirectionSign = colour == Colour.White ? 1 : -1;
-			var startRank = colour == Colour.White ? 2 : 6;
+			var startRank = colour == Colour.White ? 2 : 7;
 			if (rankAsIndex == startRank)
 			{
 				Position.AddIfInBounds(rankAsIndex + moveDirectionSign * 2, fileAsIndex , res);

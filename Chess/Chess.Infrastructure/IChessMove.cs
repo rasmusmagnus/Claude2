@@ -1,7 +1,4 @@
-﻿
-using System.Diagnostics;
-
-namespace Events;
+﻿namespace Events;
 
 public interface IChessMove
 {

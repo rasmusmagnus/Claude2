@@ -118,13 +118,36 @@ namespace Chess.Core {
 			return result[..^1];
 		}
 
-		public void MovePieces(Position from, Position to)
+		public void MovePieces(IChessMove move)
 		{
-			var fromPiece = this[from];
+			var fromPiece = this[move.From];
 			Debug.Assert(fromPiece != null);
-			this[from] = null;
-			this[to] = fromPiece;
-			Debug.Assert(this[from] == null);
+			this[move.From] = null;
+			this[move.To] = fromPiece;
+			Debug.Assert(this[move.From] == null);
+		}
+		public void MovePiecesForCastling(IChessMove move, bool isQueenSideCastlingMove, bool isKingSideCastlingMove)
+		{
+			var kingPos = move.From;
+			var king = this[kingPos];
+			Debug.Assert(king != null);
+			Debug.Assert(king is King);
+			var rookFile = isQueenSideCastlingMove ? 'a' : 'h';
+			var rookPos = new Position(rookFile, move.From.Rank);
+			var rook = this[rookPos];
+			Debug.Assert(rook != null);
+			Debug.Assert(rook is Rook);
+			var rookToPositionFile = isQueenSideCastlingMove ? 'c' : 'f';
+			var kingToPositionFile = isQueenSideCastlingMove ? 'b' : 'g';
+			var rookToRank = move.From.Rank;
+			var kingToRank = move.From.Rank;
+			var kingToPos = new Position(kingToPositionFile, kingToRank);
+			var rookToPos = new Position(rookToPositionFile, rookToRank);
+			this[kingToPos] = king;
+			this[rookToPos] = rook;
+			this[rookPos] = null;
+			this[kingPos] = null;
+			Debug.Assert(this[move.From] == null);
 		}
 	}
 }

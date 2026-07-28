@@ -13,10 +13,10 @@ public class Board {
 
 	public static string StartBoardFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-	public bool WhiteHasMove;
+	public Colour MovingColour { get; set; } = Colour.White;
 
-	private CastlingState _whiteCastlingState = new();
-	private CastlingState _blackCastlingState = new();
+	public CastlingState WhiteCastlingState = new();
+	public CastlingState BlackCastlingState = new();
 
 	private int _halfMoves = 0;
 	private int _FullMoves = 1;
@@ -31,10 +31,10 @@ public class Board {
 		_consumer = consumer;
 		Positions = new BoardPositions(StartBoardFen);
 		stateHistory = new List<string>();
-		WhiteHasMove = GetTurnFromFen(StartBoardFen);
+		MovingColour = GetTurnFromFen(StartBoardFen);
 		var castlingStates = GetCaslingStatesFromFen(StartBoardFen);
-		_whiteCastlingState = castlingStates.white;
-		_blackCastlingState = castlingStates.black;
+		WhiteCastlingState = castlingStates.white;
+		BlackCastlingState = castlingStates.black;
 		stateHistory.Add(ToFen());
 	}
 	public async Task RunAsync(CancellationToken token) {
@@ -57,18 +57,47 @@ public class Board {
 		}
 	}
 
-	private void HandleMoveCommand(MakeMoveCommand moveCommand)
+	private void ProgressTurn()
 	{
-		if (!_moveValidator.Validate(moveCommand, this))
+		if(MovingColour == Colour.White)
+		{
+			MovingColour = Colour.Black;
+			return;
+		}
+		MovingColour = Colour.White;
+	}
+
+	private void HandleMoveCommand(MakeMoveCommand command)
+	{
+		if (!TryGetPieceAtPosition(command.Move.From, out var piece))
+			return;		
+		
+		var isKingSideCastlingMove = false;
+		var isQueenSideCastlingMove = false;
+		var startPos = piece.colour == Colour.White ? King.WhiteStartPosition : King.BlackStartPosition;
+		if (command.Move.From != startPos)
+		{
+			isKingSideCastlingMove = false;
+			isQueenSideCastlingMove = false;
+		}
+		else if(command.Move.To.File == startPos.File - 2)
+		{
+			isQueenSideCastlingMove = true;	
+		}
+		else if (command.Move.To.File == startPos.File + 2)
+		{
+			isKingSideCastlingMove = true;
+		}
+		if (!_moveValidator.Validate(command, piece, this, isQueenSideCastlingMove, isKingSideCastlingMove))
 			return;
 		
-		MakeMove(moveCommand.Move);
+		MakeMove(command.Move, isQueenSideCastlingMove, isKingSideCastlingMove);
 		_producer.SubmitEvent(new BoardUpdateEvent(ToFen()));
 	}
 
-	public bool GetTurnFromFen(string fenString) {
+	private Colour GetTurnFromFen(string fenString) {
 		var turnHolderString = fenString.Split(" ")[1].ToLower();
-		return turnHolderString == "w";
+		return turnHolderString == "w" ? Colour.White : Colour.Black;
 	}
 
 	public (CastlingState white, CastlingState black) GetCaslingStatesFromFen(string fen) {
@@ -102,9 +131,41 @@ public class Board {
 		return new Board(fen);
 	}
 
-	public void MakeMove(IChessMove move)
+	public void MakeMove(IChessMove move, bool isQueenSideCastlingMove, bool isKingSideCastlingMove)
 	{
-		Positions.MovePieces(move.From, move.To);
+		if (isQueenSideCastlingMove || isKingSideCastlingMove)
+			Positions.MovePiecesForCastling(move, isQueenSideCastlingMove, isKingSideCastlingMove);
+		else
+			Positions.MovePieces(move);
+		ProgressTurn();
+		if(TryGetPieceAtPosition(move.To, out var piece))
+		{
+			if (piece is King)
+			{
+				var state = piece.colour == Colour.White ? WhiteCastlingState : BlackCastlingState;
+				state.RemoveKingsideCastlingRights();
+				state.RemoveQueensideCastlingRights();
+			}
+
+			if (piece is Rook rook)
+			{
+				if (rook.colour == Colour.White)
+				{
+					if(move.From == new Position('a', 1))
+						WhiteCastlingState.RemoveQueensideCastlingRights();
+					else if (move.From == new Position('h', 1))
+						WhiteCastlingState.RemoveKingsideCastlingRights();
+				}
+				if (rook.colour == Colour.Black)
+				{
+					if(move.From == new Position('a', 8))
+						BlackCastlingState.RemoveQueensideCastlingRights();
+					else if (move.From == new Position('h', 8))
+						BlackCastlingState.RemoveKingsideCastlingRights();
+				}
+			}
+		}
+			
 		stateHistory.Add(ToFen());
 	}
 
@@ -112,7 +173,7 @@ public class Board {
 	{
 		var res = Positions.GetPiecesFenPart();
 		res += " ";
-		res += WhiteHasMove ? "w" : "b";
+		res += MovingColour == Colour.White ? "w" : "b";
 		res += " ";
 		res += FenFromCastlingStates();
 		res += " ";
@@ -133,22 +194,22 @@ public class Board {
 	{
 		var res = "";
 
-		if (_whiteCastlingState.KingsideAvailable)
+		if (WhiteCastlingState.KingsideAvailable)
 		{
 			res += "K";
 		}
 
-		if (_whiteCastlingState.QueenSideAvailable)
+		if (WhiteCastlingState.QueenSideAvailable)
 		{
 			res += "Q";
 		}
 
-		if (_blackCastlingState.KingsideAvailable)
+		if (BlackCastlingState.KingsideAvailable)
 		{
 			res += "k";
 		}
 
-		if (_blackCastlingState.QueenSideAvailable)
+		if (BlackCastlingState.QueenSideAvailable)
 		{
 			res += "q";
 		}
