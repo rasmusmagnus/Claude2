@@ -4,5 +4,5 @@ namespace Chess.Core;
 
 public interface IMoveValidator
 {
-    bool Validate(MakeMoveCommand command);
+    bool Validate(MakeMoveCommand command, Board board);
 }

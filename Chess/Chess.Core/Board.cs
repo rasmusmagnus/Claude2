@@ -1,4 +1,6 @@
-﻿using Events;
+﻿using System.Diagnostics.CodeAnalysis;
+using Chess.Core.Pieces;
+using Events;
 using Events.Commands;
 using Events.Events;
 
@@ -39,7 +41,8 @@ public class Board {
 		var evt = new BoardUpdateEvent(ToFen());
 
 		_producer.SubmitEvent(evt);
-
+		
+		
 		var reader = _consumer.GetReader();
 
 		while (!token.IsCancellationRequested) {
@@ -56,13 +59,12 @@ public class Board {
 
 	private void HandleMoveCommand(MakeMoveCommand moveCommand)
 	{
-		if (!_moveValidator.Validate(moveCommand))
+		if (!_moveValidator.Validate(moveCommand, this))
 			return;
 		
 		MakeMove(moveCommand.Move);
 		_producer.SubmitEvent(new BoardUpdateEvent(ToFen()));
 	}
-
 
 	public bool GetTurnFromFen(string fenString) {
 		var turnHolderString = fenString.Split(" ")[1].ToLower();
@@ -157,6 +159,13 @@ public class Board {
 		}
 
 		return res;
+	}
+
+	
+	public bool TryGetPieceAtPosition(Position position, [NotNullWhen(true)] out ChessPiece? piece)
+	{
+		piece = Positions[position];
+		return piece is not null;
 	}
 }
 

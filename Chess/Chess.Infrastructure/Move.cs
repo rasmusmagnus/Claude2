@@ -6,6 +6,6 @@ namespace Events;
 /// produces from a drag-and-drop gesture. The core domain is free to introduce
 /// richer move types later; consumers only need <see cref="IChessMove"/>.
 /// </summary>
-public sealed record Move(string From, string To) : IChessMove
+public sealed record Move(Position From, Position To) : IChessMove
 {
 }

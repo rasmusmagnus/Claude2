@@ -1,18 +1,45 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Events;
 
-namespace Chess.Core.Pieces {
-	internal class Rook : ChessPiece {
-		public Rook(Colour colour) : base(colour)
-		{
-		}
+namespace Chess.Core.Pieces
+{
+    internal class Rook : ChessPiece
+    {
+        public Rook(Colour colour) : base(colour)
+        {
+        }
 
-		public override string ToFenCharecter()
-		{
-			return colour == Colour.White ? "R" : "r";
-		}
-	}
+        public override string ToFenCharecter()
+        {
+            return colour == Colour.White ? "R" : "r";
+        }
+
+        public override HashSet<Position> GetPossibleMoves(Position startPosition)
+        {
+            var res = new HashSet<Position>();
+            var fileAsIndex = startPosition.FileToIndex();
+            var rankAsIndex = startPosition.Rank;
+
+            for (var sign1 = -1; sign1 <= 1; sign1 += 2)
+            {
+                var i = 1;
+                while (!Position.IsOutOfBounds(fileAsIndex + sign1 * i, rankAsIndex))
+                {
+                    res.Add(new Position(fileAsIndex + sign1 * i, rankAsIndex));
+                    i++;
+                }
+            }
+
+            for (var sign2 = -1; sign2 <= 1; sign2 += 2)
+            {
+                var i = 1;
+                while (!Position.IsOutOfBounds(fileAsIndex, rankAsIndex + sign2 * i))
+                {
+                    res.Add(new Position(fileAsIndex, rankAsIndex + sign2 * i));
+                    i++;
+                }
+            }
+
+            return res;
+        }
+    }
 }

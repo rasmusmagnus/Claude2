@@ -37,7 +37,7 @@ builder.Services.AddSingleton<IEventConsumer<IGameEvent>>(
 // The core domain engine. It owns all game logic: it consumes the commands the
 // UI submits, applies moves, and emits BoardUpdateEvents. Move legality is the
 // validator's job (today AllOkMoveValidator accepts everything).
-builder.Services.AddSingleton<IMoveValidator, AllOkMoveValidator>();
+builder.Services.AddSingleton<IMoveValidator, MoveValidator>();
 builder.Services.AddSingleton<Board>();
 builder.Services.AddHostedService<BoardEngineService>();
 

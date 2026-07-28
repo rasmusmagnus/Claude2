@@ -1,39 +1,40 @@
 ﻿using System.Diagnostics;
 using Chess.Core.Pieces;
+using Events;
 
 namespace Chess.Core {
 	public class BoardPositions {
 		public ChessPiece?[][] state;
 		
-		public ChessPiece? this[string index, int index2] {
+		public ChessPiece? this[Position position] {
 			get
 			{
-				var (indexFinal, letterIndex) = GetIndexFromNotation(index2, index);
+				var (indexFinal, letterIndex) = GetIndexFromNotation(position);
 
 				return state[indexFinal][letterIndex];
 			}
 			private set
 			{
-				var (indexFinal, letterIndex) = GetIndexFromNotation(index2, index);
+				var (indexFinal, letterIndex) = GetIndexFromNotation(position);
 				state[indexFinal][letterIndex] = value;
 			}
 		}
 
-		private static (int, int) GetIndexFromNotation(int index, string letterIndex)
+		private static (int, int) GetIndexFromNotation(Position position)
 		{
-			int indexInt = letterIndex.ToLower() switch
+			int indexInt = position.File switch
 			{
-				"a" => 0,
-				"b" => 1,
-				"c" => 2,
-				"d" => 3,
-				"e" => 4,
-				"f" => 5,
-				"g" => 6,
-				"h" => 7,
+				'a' => 0,
+				'b' => 1,
+				'c' => 2,
+				'd' => 3,
+				'e' => 4,
+				'f' => 5,
+				'g' => 6,
+				'h' => 7,
 				_ => throw new ArgumentException("Invalid index")
 			};
-			return (index - 1, indexInt);
+			return (position.Rank - 1, indexInt);
 		}
 
 		public BoardPositions(string fenString) {
@@ -117,13 +118,13 @@ namespace Chess.Core {
 			return result[..^1];
 		}
 
-		public void MovePieces(string from, string to)
+		public void MovePieces(Position from, Position to)
 		{
-			var fromPiece = this[from[0].ToString(), int.Parse(from[1].ToString())];
+			var fromPiece = this[from];
 			Debug.Assert(fromPiece != null);
-			this[from[0].ToString(), int.Parse(from[1].ToString())] = null;
-			this[to[0].ToString(), int.Parse(to[1].ToString())] = fromPiece;
-			Debug.Assert(this[from[0].ToString(), int.Parse(from[1].ToString())] == null);
+			this[from] = null;
+			this[to] = fromPiece;
+			Debug.Assert(this[from] == null);
 		}
 	}
 }

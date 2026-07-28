@@ -1,4 +1,6 @@
-﻿namespace Chess.Core.Pieces {
+﻿using Events;
+
+namespace Chess.Core.Pieces {
 	public abstract class ChessPiece {
 		public readonly Colour colour;
 
@@ -7,5 +9,7 @@
 		}
 
 		public abstract string ToFenCharecter();
+
+		public abstract HashSet<Position> GetPossibleMoves(Position startPosition);
 	}
 }

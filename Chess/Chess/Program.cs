@@ -16,7 +16,7 @@ builder.Services.AddSingleton<IEventProducer<IGameEvent>>(
 builder.Services.AddSingleton<IEventConsumer<ICommand>>(
     sp => sp.GetRequiredService<EventDistributor<ICommand>>());
 
-builder.Services.AddSingleton<IMoveValidator, AllOkMoveValidator>();
+builder.Services.AddSingleton<IMoveValidator, MoveValidator>();
 
 // Register the board, which receives its dependencies via constructor injection.
 builder.Services.AddSingleton<Board>();

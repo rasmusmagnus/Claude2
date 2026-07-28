@@ -4,7 +4,7 @@ namespace Chess.Core;
 
 public class AllOkMoveValidator : IMoveValidator
 {
-    public bool Validate(MakeMoveCommand command)
+    public bool Validate(MakeMoveCommand command, Board board)
     {
         return true;
     }

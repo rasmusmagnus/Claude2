@@ -2,6 +2,8 @@
 using Events;
 using Events.Commands;
 using Events.Events;
+using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace Chess.Core.Tests;
 
@@ -10,6 +12,8 @@ public class BoardTests
     private static IMoveValidator _moveValidator = new AllOkMoveValidator();
     private static IEventConsumer<ICommand> _consumer = new ConsumerFixture();
     private static IEventProducer<IGameEvent> _producer = new ProducerFixture();
+    
+    private static readonly TestOutputHelper _testOutputHelper = new ();
     
     [Fact]
     public void TestNoMoveFen()
