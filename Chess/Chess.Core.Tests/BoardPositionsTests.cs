@@ -1,5 +1,6 @@
 using Chess.Core.Pieces;
 using Events;
+using Events.Commands;
 
 namespace Chess.Core.Tests;
 
@@ -16,13 +17,13 @@ public class BoardPositionsTests {
 	}
 	
 	[Fact]
-	public void ByPosition() {
-		var fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
-		var board = new BoardPositions(fen);
-
-		var piece = board["e4".ToPosition()];
-		Assert.True(piece is Pawn);
-		Assert.Equal(Colour.White, piece.colour);
+            	public void ByPosition() {
+            		var fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+            		var board = new BoardPositions(fen);
+            
+            		var piece = board["e4".ToPosition()];
+            		Assert.True(piece is Pawn);
+            		Assert.Equal(Colour.White, piece.colour);
 	}
 
 	[Fact]

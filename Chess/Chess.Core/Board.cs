@@ -25,6 +25,18 @@ public class Board {
 
 	public List<string> stateHistory;
 
+	public Board(IMoveValidator moveValidator, IEventProducer<IGameEvent> producer, IEventConsumer<ICommand> consumer, string fenString) {
+		_moveValidator = moveValidator;
+		_producer = producer;
+		_consumer = consumer;
+		Positions = new BoardPositions(fenString);
+		stateHistory = new List<string>();
+		MovingColour = GetTurnFromFen(fenString);
+		var castlingStates = GetCaslingStatesFromFen(fenString);
+		WhiteCastlingState = castlingStates.white;
+		BlackCastlingState = castlingStates.black;
+		stateHistory.Add(ToFen());
+	}
 	public Board(IMoveValidator moveValidator, IEventProducer<IGameEvent> producer, IEventConsumer<ICommand> consumer) {
 		_moveValidator = moveValidator;
 		_producer = producer;
@@ -67,7 +79,7 @@ public class Board {
 		MovingColour = Colour.White;
 	}
 
-	private void HandleMoveCommand(MakeMoveCommand command)
+	public void HandleMoveCommand(MakeMoveCommand command)
 	{
 		if (!TryGetPieceAtPosition(command.Move.From, out var piece))
 			return;		
