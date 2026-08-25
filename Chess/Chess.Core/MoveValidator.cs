@@ -1,4 +1,5 @@
 ﻿using Chess.Core.Pieces;
+using Events;
 using Events.Commands;
 
 namespace Chess.Core;
@@ -22,11 +23,10 @@ public class MoveValidator : IMoveValidator
             return false;
         if (IsTakingOwnPiece(command, board, piece))
             return false;
-        if (!IsLegalCastlingMove(command, board, piece, isQueenSideCastlingMove, isKingSideCastlingMove))
+        if (IsIllegalCastlingMove(command, board, piece, isQueenSideCastlingMove, isKingSideCastlingMove))
             return false;
         if (IsMakingEnPassantMove(command, board, piece))
             return false;
-        
         if (IsPieceInTheWay(command, board, piece))
             return false;
         if (IsPromotingMove(command, board, piece))
@@ -42,26 +42,35 @@ public class MoveValidator : IMoveValidator
         return piece.Colour != board.MovingColour;
     }
 
-    private static bool IsLegalCastlingMove(MakeMoveCommand command, Board board, ChessPiece piece, bool isQueenSideCastlingMove, bool isKingSideCastlingMove)
+    private static bool IsIllegalCastlingMove(MakeMoveCommand command, Board board, ChessPiece piece, bool isQueenSideCastlingMove, bool isKingSideCastlingMove)
     {
         if (piece is not King)
-            return true;
+            return false;
         var startPos = piece.Colour == Colour.White ? King.WhiteStartPosition : King.BlackStartPosition;
         if (command.Move.From != startPos)
         {
-            return true;
+            return false;
         }
         if (!isQueenSideCastlingMove && !isKingSideCastlingMove)
-            return true;
+            return false;
         var state = piece.Colour == Colour.White ? board.WhiteCastlingState : board.BlackCastlingState;
-        if (isKingSideCastlingMove && state.KingsideAvailable)
+        
+        if (isKingSideCastlingMove && !state.KingsideAvailable)
             return true;
-        if (isQueenSideCastlingMove && state.QueenSideAvailable)
+        if (isQueenSideCastlingMove && !state.QueenSideAvailable)
             return true;
-        //TODO
-        var isCastlingSquaresUnderAttack = true;
-        if (!isCastlingSquaresUnderAttack)
+        var castlingSquares = isKingSideCastlingMove
+            ? CastlingState.KingSideCastlingSquares(piece.Colour)
+            : CastlingState.QueenSideCastlingSquares(piece.Colour);
+        foreach (var pos in castlingSquares)
+        {
+            if(IsBoardInCheck(pos, piece.Colour, board.Positions))
+                return true;
+        }
+        if(IsBoardInCheck(board.Positions.GetKingPosition(piece.Colour), piece.Colour, board.Positions))
             return true;
+
+        
         return false;
     }
 
@@ -79,16 +88,17 @@ public class MoveValidator : IMoveValidator
     {
         var futureBoard = board.Positions.Copy();
         futureBoard.MovePieces(command.Move);
-        if (IsBoardInCheck(piece, futureBoard)) 
+        var kingPos = futureBoard.GetKingPosition(piece.Colour);
+
+        if (IsBoardInCheck(kingPos, piece.Colour, futureBoard)) 
             return true;
 
         return false;
     }
 
-    private static bool IsBoardInCheck(ChessPiece piece, BoardPositions board)
+    private static bool IsBoardInCheck(Position kingPos, Colour kingColour, BoardPositions board)
     {
-        var kingPos = board.GetKingPosition(piece.Colour);
-        var oppositeColour = piece.Colour == Colour.White ? Colour.Black : Colour.White;
+        var oppositeColour = kingColour == Colour.White ? Colour.Black : Colour.White;
 
         if (HasOppositeAttacker(board.GetFirstPieceAtEastRank(kingPos), oppositeColour, _cardinalAttackPieces))
             return true;
@@ -110,7 +120,7 @@ public class MoveValidator : IMoveValidator
             return true;
         if (board.GetAttackingKnights(kingPos).Any(k => HasOppositeAttacker(k, oppositeColour, _knightAttackPieces)))
             return true;
-        if (board.GetAttackingPawns(kingPos, piece.Colour).Any(k => HasOppositeAttacker(k, oppositeColour, _pawnAttackPieces)))
+        if (board.GetAttackingPawns(kingPos, kingColour).Any(k => HasOppositeAttacker(k, oppositeColour, _pawnAttackPieces)))
             return true;
 
         return false;
