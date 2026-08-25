@@ -4,19 +4,24 @@ using Events;
 
 namespace Chess.Core {
 	public class BoardPositions {
-		public ChessPiece?[][] state;
+		private readonly ChessPiece?[][] _state;
+
+		private BoardPositions(ChessPiece?[][] state)
+		{
+			this._state = state;
+		}
 		
 		public ChessPiece? this[Position position] {
 			get
 			{
 				var (indexFinal, letterIndex) = GetIndexFromNotation(position);
 
-				return state[indexFinal][letterIndex];
+				return _state[indexFinal][letterIndex];
 			}
 			private set
 			{
 				var (indexFinal, letterIndex) = GetIndexFromNotation(position);
-				state[indexFinal][letterIndex] = value;
+				_state[indexFinal][letterIndex] = value;
 			}
 		}
 
@@ -43,8 +48,7 @@ namespace Chess.Core {
 
 			var fenRows = trimmedFen.Split("/");
 
-			for (int i = 0;
-			i < fenRows.Length; i++) {
+			for (int i = 0; i < fenRows.Length; i++) {
 				var file = fenRows[i];
 				result[7 - i] = new ChessPiece?[8];
 				var squareIndex = 0;
@@ -80,16 +84,14 @@ namespace Chess.Core {
 						result[7 - i][squareIndex] = piece;
 						squareIndex++;
 					}
-
 				}
-
 			}
-			state = result;
+			_state = result;
 		}
 
 		public string GetPiecesFenPart() {
 			var result = "";
-			foreach (var file in state.Reverse()) {
+			foreach (var file in _state.Reverse()) {
 				var counter = 0;
 				foreach (var square in file) {
 
@@ -148,6 +150,36 @@ namespace Chess.Core {
 			this[rookPos] = null;
 			this[kingPos] = null;
 			Debug.Assert(this[move.From] == null);
+		}
+		
+		public BoardPositions Copy()
+		{
+			var outer = new ChessPiece?[_state.Length][];
+			var i = 0;
+			foreach (var fileOrRank in _state)
+			{
+				var copied = new ChessPiece?[_state.Length];
+				fileOrRank.CopyTo(copied, 0);
+				outer[i] = copied;
+				i++;
+			}
+			return new BoardPositions(outer);
+		}
+
+		public Position GetKingPosition(Colour pieceColour)
+		{
+			var reverse = _state;
+			for (int file = 0; file < _state.Length; file++)
+			{
+				for (int rank = 0; rank < _state.Length; rank++)
+				{
+					var piece = reverse[rank][file];
+					if (piece is King king && king.Colour == pieceColour)
+						return new Position(file+1, rank+1);
+				}
+			}
+			
+			throw new Exception("No king was found!");
 		}
 	}
 }

@@ -2,10 +2,10 @@
 
 namespace Chess.Core.Pieces {
 	public abstract class ChessPiece {
-		public readonly Colour colour;
+		public readonly Colour Colour;
 
 		public ChessPiece(Colour colour) {
-			this.colour = colour;
+			this.Colour = colour;
 		}
 
 		public abstract string ToFenCharecter();

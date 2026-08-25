@@ -10,7 +10,7 @@ namespace Chess.Core.Pieces
 
         public override string ToFenCharecter()
         {
-            return colour == Colour.White ? "R" : "r";
+            return Colour == Colour.White ? "R" : "r";
         }
 
         public override HashSet<Position> GetPossibleMoves(Position startPosition)

@@ -6,7 +6,7 @@ namespace Chess.Core.Pieces {
 		}
 
 		public override string ToFenCharecter() {
-			return colour == Colour.White ? "P" : "p";
+			return Colour == Colour.White ? "P" : "p";
 		}
 
 		public override HashSet<Position> GetPossibleMoves(Position startPosition)
@@ -14,8 +14,8 @@ namespace Chess.Core.Pieces {
 			var res = new HashSet<Position>();
 			var fileAsIndex = startPosition.FileToIndex();
 			var rankAsIndex = startPosition.Rank;
-			var moveDirectionSign = colour == Colour.White ? 1 : -1;
-			var startRank = colour == Colour.White ? 2 : 7;
+			var moveDirectionSign = Colour == Colour.White ? 1 : -1;
+			var startRank = Colour == Colour.White ? 2 : 7;
 			if (rankAsIndex == startRank)
 			{
 				Position.AddIfInBounds(rankAsIndex + moveDirectionSign * 2, fileAsIndex , res);

@@ -6,7 +6,7 @@ public interface IChessMove
     Position To { get; init; }
 }
 
-public record struct Position
+public readonly record struct Position
 {
     public readonly char File;
     public readonly int Rank;

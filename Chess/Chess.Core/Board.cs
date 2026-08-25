@@ -86,7 +86,7 @@ public class Board {
 		
 		var isKingSideCastlingMove = false;
 		var isQueenSideCastlingMove = false;
-		var startPos = piece.colour == Colour.White ? King.WhiteStartPosition : King.BlackStartPosition;
+		var startPos = piece.Colour == Colour.White ? King.WhiteStartPosition : King.BlackStartPosition;
 		if (command.Move.From != startPos)
 		{
 			isKingSideCastlingMove = false;
@@ -154,21 +154,21 @@ public class Board {
 		{
 			if (piece is King)
 			{
-				var state = piece.colour == Colour.White ? WhiteCastlingState : BlackCastlingState;
+				var state = piece.Colour == Colour.White ? WhiteCastlingState : BlackCastlingState;
 				state.RemoveKingsideCastlingRights();
 				state.RemoveQueensideCastlingRights();
 			}
 
 			if (piece is Rook rook)
 			{
-				if (rook.colour == Colour.White)
+				if (rook.Colour == Colour.White)
 				{
 					if(move.From == new Position('a', 1))
 						WhiteCastlingState.RemoveQueensideCastlingRights();
 					else if (move.From == new Position('h', 1))
 						WhiteCastlingState.RemoveKingsideCastlingRights();
 				}
-				if (rook.colour == Colour.Black)
+				if (rook.Colour == Colour.Black)
 				{
 					if(move.From == new Position('a', 8))
 						BlackCastlingState.RemoveQueensideCastlingRights();

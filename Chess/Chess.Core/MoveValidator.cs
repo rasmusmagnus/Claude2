@@ -23,9 +23,9 @@ public class MoveValidator : IMoveValidator
         
         if (IsPieceInTheWay(command, board, piece))
             return false;
-        if (LeavesMovingColourInCheck(command, board, piece))
-            return false;
         if (IsPromotingMove(command, board, piece))
+            return false;
+        if (LeavesMovingColourInCheck(command, board, piece))
             return false;
         
         return true;
@@ -33,21 +33,21 @@ public class MoveValidator : IMoveValidator
 
     private static bool IsNotMovingColoursTurn(MakeMoveCommand command, Board board, ChessPiece piece)
     {
-        return piece.colour != board.MovingColour;
+        return piece.Colour != board.MovingColour;
     }
 
     private static bool IsLegalCastlingMove(MakeMoveCommand command, Board board, ChessPiece piece, bool isQueenSideCastlingMove, bool isKingSideCastlingMove)
     {
         if (piece is not King)
             return true;
-        var startPos = piece.colour == Colour.White ? King.WhiteStartPosition : King.BlackStartPosition;
+        var startPos = piece.Colour == Colour.White ? King.WhiteStartPosition : King.BlackStartPosition;
         if (command.Move.From != startPos)
         {
             return true;
         }
         if (!isQueenSideCastlingMove && !isKingSideCastlingMove)
             return true;
-        var state = piece.colour == Colour.White ? board.WhiteCastlingState : board.BlackCastlingState;
+        var state = piece.Colour == Colour.White ? board.WhiteCastlingState : board.BlackCastlingState;
         if (isKingSideCastlingMove && state.KingsideAvailable)
             return true;
         if (isQueenSideCastlingMove && state.QueenSideAvailable)
@@ -71,6 +71,9 @@ public class MoveValidator : IMoveValidator
 
     private static bool LeavesMovingColourInCheck(MakeMoveCommand command, Board board, ChessPiece piece)
     {
+        var futureBoard = board.Positions.Copy();
+        futureBoard.MovePieces(command.Move);
+        futureBoard.GetKingPosition(piece.Colour);
         return false;
     }
 
@@ -82,6 +85,6 @@ public class MoveValidator : IMoveValidator
     private static bool IsTakingOwnPiece(MakeMoveCommand command, Board board, ChessPiece piece)
     {
         if (!board.TryGetPieceAtPosition(command.Move.To, out var pieceAtTo)) return false;
-        return pieceAtTo.colour == piece.colour;
+        return pieceAtTo.Colour == piece.Colour;
     }
 }

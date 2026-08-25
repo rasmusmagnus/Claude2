@@ -10,11 +10,11 @@ namespace Chess.Core.Pieces {
 
 		private Position StartPosition()
 		{
-			return colour == Colour.White ? WhiteStartPosition : BlackStartPosition;
+			return Colour == Colour.White ? WhiteStartPosition : BlackStartPosition;
 		}
 
 		public override string ToFenCharecter() {
-			return colour == Colour.White ? "K" : "k";
+			return Colour == Colour.White ? "K" : "k";
 		}
 
 		public override HashSet<Position> GetPossibleMoves(Position startPosition)
