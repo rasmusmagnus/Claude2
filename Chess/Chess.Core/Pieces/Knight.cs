@@ -2,7 +2,7 @@ using Events;
 
 namespace Chess.Core.Pieces
 {
-    internal class Knight : ChessPiece
+    public class Knight : ChessPiece
     {
         public Knight(Colour colour) : base(colour)
         {

@@ -18,7 +18,7 @@ namespace Chess.Core.Pieces {
 			for (var sign1 = -1; sign1 <= 1; sign1 += 2)
 			{
 				var i = 1;
-				while (!Position.IsOutOfBounds(rankAsIndex, sign1 * i + fileAsIndex))
+				while (!Position.IsOutOfBounds(sign1 * i + fileAsIndex, rankAsIndex))
 				{
 					Position.AddIfInBounds(rankAsIndex, sign1 * i + fileAsIndex, res);
 					i++;
@@ -28,7 +28,7 @@ namespace Chess.Core.Pieces {
 			for (var sign2 = -1; sign2 <= 1; sign2 += 2)
 			{
 				var i = 1;
-				while (!Position.IsOutOfBounds(rankAsIndex + sign2 * i, fileAsIndex))
+				while (!Position.IsOutOfBounds(fileAsIndex, rankAsIndex + sign2 * i))
 				{
 					Position.AddIfInBounds(rankAsIndex + sign2 * i, fileAsIndex, res);
 					i++;
@@ -40,7 +40,7 @@ namespace Chess.Core.Pieces {
 				for (var sign2 = -1; sign2 <= 1; sign2 += 2)
 				{
 					var i = 1;
-					while (!Position.IsOutOfBounds(fileAsIndex+sign1 *i, rankAsIndex+sign2* i))
+					while (!Position.IsOutOfBounds(rankAsIndex+sign2* i, fileAsIndex+sign1 *i))
 					{
 						res.Add(new Position(fileAsIndex+sign1 *i, rankAsIndex+sign2*i));
 						i++;

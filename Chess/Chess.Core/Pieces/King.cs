@@ -31,7 +31,7 @@ namespace Chess.Core.Pieces {
 					var resultingRank = rankAsIndex + j;
 					var resultingFile = fileAsIndex + i;
 					
-					if(Position.IsOutOfBounds(resultingRank, resultingFile))
+					if(Position.IsOutOfBounds(resultingFile, resultingRank))
 						continue;
 					
 					res.Add(new Position(resultingFile, resultingRank));

@@ -6,7 +6,7 @@ public interface IChessMove
     Position To { get; init; }
 }
 
-public readonly record struct Position
+public record struct Position
 {
     public readonly char File;
     public readonly int Rank;
@@ -40,14 +40,14 @@ public readonly record struct Position
         return file + 1;
     }
 
-    public static bool IsOutOfBounds(int resultingRank, int resultingFile)
+    public static bool IsOutOfBounds(int resultingFile, int resultingRank)
     {
         return resultingRank < 1 || resultingRank > 8 || resultingFile < 1 || resultingFile > 8;
     }
     
     public static void AddIfInBounds(int rankAsIndex, int fileAsIndex, HashSet<Position> hashSet)
     {
-        if (!IsOutOfBounds(rankAsIndex, fileAsIndex))
+        if (!IsOutOfBounds(fileAsIndex, rankAsIndex))
         {
             hashSet.Add(new Position(fileAsIndex, rankAsIndex));
         }
