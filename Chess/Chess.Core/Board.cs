@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 using Chess.Core.Pieces;
 using Events;
 using Events.Commands;
@@ -18,6 +19,8 @@ public class Board
 
     public CastlingState WhiteCastlingState = new();
     public CastlingState BlackCastlingState = new();
+
+    public Position? EnPassantSquare { get; set; }
 
     private int _halfMoves = 0;
     private int _FullMoves = 1;
@@ -114,7 +117,11 @@ public class Board
         if (!_moveValidator.Validate(command, piece, this, isQueenSideCastlingMove, isKingSideCastlingMove))
             return;
 
-        MakeMove(command.Move, isQueenSideCastlingMove, isKingSideCastlingMove);
+        var isDoublePawnMove = piece is Pawn && (command.Move.From - command.Move.To == (0, 2) ||
+                                                 command.Move.From - command.Move.To == (0, -2));
+
+        var isEnPassantCapture = piece is Pawn && command.Move.To == EnPassantSquare;
+        MakeMove(command.Move, isQueenSideCastlingMove, isKingSideCastlingMove, isDoublePawnMove, isEnPassantCapture);
         _producer.SubmitEvent(new BoardUpdateEvent(ToFen()));
     }
 
@@ -164,12 +171,36 @@ public class Board
         return new Board(fen);
     }
 
-    public void MakeMove(IChessMove move, bool isQueenSideCastlingMove, bool isKingSideCastlingMove)
+    public void MakeMove(IChessMove move, bool isQueenSideCastlingMove, bool isKingSideCastlingMove,
+        bool isDoublePawnMove, bool isEnPassantCapture)
     {
         if (isQueenSideCastlingMove || isKingSideCastlingMove)
+        {
             Positions.MovePiecesForCastling(move, isQueenSideCastlingMove, isKingSideCastlingMove);
-        else
+            EnPassantSquare = null;
+        }
+        else if (isDoublePawnMove)
+        {
+            var from = move.From;
+            var to = move.To;
+            var dir = to - from;
+            var unitDir = (0, dir.Item2 / Math.Abs(dir.Item2));
+            EnPassantSquare = from + unitDir;
             Positions.MovePieces(move);
+        }
+        else if (isEnPassantCapture)
+        {
+            Positions.MovePiecesUnderEnPassantAttack(move);
+            EnPassantSquare = null;
+        }
+        else
+        {
+            Positions.MovePieces(move);
+            EnPassantSquare = null;
+        }
+
+        
+
         ProgressTurn();
         if (TryGetPieceAtPosition(move.To, out var piece))
         {
@@ -221,7 +252,7 @@ public class Board
 
     private string GetEnPassantTiles()
     {
-        return "-";
+        return EnPassantSquare == null ? "-" : EnPassantSquare.Value.ToString();
     }
 
     private string FenFromCastlingStates()
@@ -261,6 +292,33 @@ public class Board
     {
         piece = Positions[position];
         return piece is not null;
+    }
+
+    public bool IsPieceBetween(IChessMove commandMove)
+    {
+        var from = commandMove.From;
+        var to = commandMove.To;
+        var direction = to - from;
+        var unitDir = (direction.Item1 / (direction.Item1 == 0 ? 1 : Math.Abs(direction.Item1)),
+            direction.Item2 / (direction.Item2 == 0 ? 1 : Math.Abs(direction.Item2)));
+        var resultingPos = from + unitDir;
+        while (!Position.IsOutOfBounds(resultingPos) && resultingPos != to)
+        {
+            var pieceAtPos = Positions[resultingPos];
+            if (pieceAtPos is { } piece)
+            {
+                return true;
+            }
+
+            resultingPos = resultingPos + unitDir;
+        }
+
+        return false;
+    }
+
+    public Position? GetEnPassantSquare()
+    {
+        return EnPassantSquare;
     }
 }
 

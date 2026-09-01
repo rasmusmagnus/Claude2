@@ -147,6 +147,17 @@ namespace Chess.Core
             Debug.Assert(this[move.From] == null);
         }
 
+        public void MovePiecesUnderEnPassantAttack(IChessMove move)
+        {
+            var from = move.From;
+            var to = move.To;
+            var dir = from - to;
+            var unitDir = (0, dir.Item2 / Math.Abs(dir.Item2));
+            var targetPawnPos = to + unitDir;
+            this[targetPawnPos] = null;
+            MovePieces(move);
+        }
+
         public void MovePiecesForCastling(IChessMove move, bool isQueenSideCastlingMove, bool isKingSideCastlingMove)
         {
             var kingPos = move.From;
@@ -216,7 +227,7 @@ namespace Chess.Core
 
             return null;
         }
-
+        
         public ChessPiece? GetFirstPieceAtWestRank(Position kingPos)
         {
             var indexShift = 1;

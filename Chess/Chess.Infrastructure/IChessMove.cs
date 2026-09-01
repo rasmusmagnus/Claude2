@@ -1,4 +1,6 @@
-﻿namespace Events;
+﻿using System.Runtime.CompilerServices;
+
+namespace Events;
 
 public interface IChessMove
 {
@@ -40,6 +42,20 @@ public record struct Position
         return file + 1;
     }
 
+    public static bool IsOutOfBounds(Position position)
+    {
+        try
+        {
+            return IsOutOfBounds(position.FileToIndex(), position.Rank);
+        }
+        catch
+        {
+            return true;
+        }
+
+
+    }
+
     public static bool IsOutOfBounds(int resultingFile, int resultingRank)
     {
         return resultingRank < 1 || resultingRank > 8 || resultingFile < 1 || resultingFile > 8;
@@ -53,4 +69,18 @@ public record struct Position
         }
     }
     
+    public static (int, int) operator -(Position first, Position second)
+    {
+        return (first.FileToIndex() - second.FileToIndex(), first.Rank - second.Rank);
+    }
+
+    public static Position operator +(Position pos, (int, int) direction)
+    {
+        return new Position(pos.FileToIndex() + direction.Item1, pos.Rank + direction.Item2);
+    }
+
+    public override string ToString()
+    {
+        return File.ToString() + Rank.ToString(); 
+    }
 }
