@@ -51,12 +51,13 @@ public class MoveValidator : IMoveValidator
             var dir = command.Move.To - command.Move.From;
             var isCapturing = (board.Positions[command.Move.To] is { } targetPiece &&
                                piece.Colour != targetPiece.Colour);
-;            if (command.Move.To == board.GetEnPassantSquare() || (isCapturing && dir.Item1 != 0))
+            ;
+            if (command.Move.To == board.GetEnPassantSquare() || (isCapturing && dir.Item1 != 0))
                 return false;
             if (!isCapturing && dir.Item1 != 0)
                 return true;
-            
-            return  isCapturing && dir.Item1 == 0;
+
+            return isCapturing && dir.Item1 == 0;
         }
 
         return isPieceBetween;
@@ -124,7 +125,7 @@ public class MoveValidator : IMoveValidator
         return false;
     }
 
-    private static bool IsBoardInCheck(Position kingPos, Colour kingColour, BoardPositions board)
+    public static bool IsBoardInCheck(Position kingPos, Colour kingColour, BoardPositions board)
     {
         var oppositeColour = kingColour == Colour.White ? Colour.Black : Colour.White;
 

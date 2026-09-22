@@ -123,6 +123,30 @@ public class Board
         var isEnPassantCapture = piece is Pawn && command.Move.To == EnPassantSquare;
         MakeMove(command.Move, isQueenSideCastlingMove, isKingSideCastlingMove, isDoublePawnMove, isEnPassantCapture);
         _producer.SubmitEvent(new BoardUpdateEvent(ToFen()));
+        if (IsInCheck(out var colour))
+            _producer.SubmitEvent(new CheckEvent(colour!.Value));
+    }
+
+    private bool IsInCheck(out Colour? colour)
+    {
+        colour = null;
+        var isWhiteInCheck =
+            MoveValidator.IsBoardInCheck(Positions.GetKingPosition(Colour.White), Colour.White, Positions);
+        var isBlackInCheck =
+            MoveValidator.IsBoardInCheck(Positions.GetKingPosition(Colour.Black), Colour.Black, Positions);
+        
+        if(isWhiteInCheck)
+        {
+            colour = Colour.White;
+            return true;
+        }
+        else if (isBlackInCheck)
+        {
+            colour = Colour.Black;
+            return true;
+        }
+
+        return false;
     }
 
     private Colour GetTurnFromFen(string fenString)
@@ -199,7 +223,6 @@ public class Board
             EnPassantSquare = null;
         }
 
-        
 
         ProgressTurn();
         if (TryGetPieceAtPosition(move.To, out var piece))
