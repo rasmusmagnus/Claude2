@@ -12,7 +12,13 @@ public class MoveValidator : IMoveValidator
     private static readonly Type[] KingAttackPieces = [typeof(King)];
     private static readonly Type[] PawnAttackPieces = [typeof(Pawn)];
 
-    public bool Validate(MakeMoveCommand command, ChessPiece piece, Board board, bool isQueenSideCastlingMove,
+    bool IMoveValidator.Validate(MakeMoveCommand command, ChessPiece piece, Board board, bool isQueenSideCastlingMove,
+        bool isKingCastlingMove)
+    {
+        return Validate(command, piece, board, isQueenSideCastlingMove, isKingCastlingMove);
+    }
+
+    public static bool Validate(MakeMoveCommand command, ChessPiece piece, Board board, bool isQueenSideCastlingMove,
         bool isKingSideCastlingMove)
     {
         var possibleMoves = piece.GetPossibleMoves(command.Move.From);
@@ -173,8 +179,24 @@ public class MoveValidator : IMoveValidator
             var moves = piece!.GetPossibleMoves(pos);
             foreach (var move in moves)
             {
+                var isKingSideCastlingMove = false;
+                var isQueenSideCastlingMove = false;
+                var startPos = piece.Colour == Colour.White ? King.WhiteStartPosition : King.BlackStartPosition;
+                if (pos != startPos)
+                {
+                    isKingSideCastlingMove = false;
+                    isQueenSideCastlingMove = false;
+                }
+                else if (move.File == startPos.File - 2)
+                {
+                    isQueenSideCastlingMove = true;
+                }
+                else if (move.File == startPos.File + 2)
+                {
+                    isKingSideCastlingMove = true;
+                }
                 var moveCommand = new MakeMoveCommand(new Move(pos, move));
-                if (IsNotViablePieceMove(moveCommand, board, piece))
+                if (!Validate(moveCommand, piece, board, isQueenSideCastlingMove, isKingSideCastlingMove))
                 {
                     continue;
                 }

@@ -22,6 +22,7 @@ public sealed class BoardStateStore : BackgroundService
     private readonly List<string> _history = new();
     private string _currentFen = Fen.StartPosition;
     private Colour? _colourInCheck;
+    private bool _isMate;
 
     public BoardStateStore(IEventConsumer<IGameEvent> events, ILogger<BoardStateStore> logger)
     {
@@ -45,9 +46,9 @@ public sealed class BoardStateStore : BackgroundService
     }
 
     /// <summary>Atomically captures the board and its associated check state.</summary>
-    public (string Fen, Colour? ColourInCheck) Snapshot
+    public (string Fen, Colour? ColourInCheck, bool IsMate) Snapshot
     {
-        get { lock (_gate) return (_currentFen, _colourInCheck); }
+        get { lock (_gate) return (_currentFen, _colourInCheck, _isMate); }
     }
 
     /// <summary>Snapshot of the FENs observed so far (for the debug/export panel).</summary>
@@ -75,12 +76,17 @@ public sealed class BoardStateStore : BackgroundService
                     {
                         _currentFen = update.BoardFenNotation;
                         _colourInCheck = null;
+                        _isMate = false;
                         _history.Add(update.BoardFenNotation);
                     }
                     Changed?.Invoke();
                     break;
                 case CheckEvent check:
-                    lock (_gate) _colourInCheck = check.ColourInCheck;
+                    lock (_gate)
+                    {
+                        _colourInCheck = check.ColourInCheck;
+                        _isMate = check.IsMate;
+                    }
                     Changed?.Invoke();
                     break;
             }

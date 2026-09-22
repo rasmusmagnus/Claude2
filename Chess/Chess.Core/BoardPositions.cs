@@ -375,7 +375,7 @@ namespace Chess.Core
         public List<Position> GetColourPiecePositions(Colour colour)
         {
             var res = new List<Position>();
-            for (int file = 0; file < 8; file++)
+            for (int file = 1; file < 9; file++)
             {
                 for (int rank = 1; rank < 9; rank++)
                 {

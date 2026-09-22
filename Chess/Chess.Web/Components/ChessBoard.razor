@@ -9,7 +9,17 @@
 
 <div class="board-shell">
     <div class="check-status-slot">
-        @if (_colourInCheck is { } colour)
+        @if (_isMate && Winner is { } winner)
+        {
+            <div class="game-result" role="alert">
+                <span class="trophy" aria-hidden="true">🏆</span>
+                <span>
+                    <strong>Checkmate!</strong>
+                    <small>@winner wins</small>
+                </span>
+            </div>
+        }
+        else if (_colourInCheck is { } colour)
         {
             <div class="check-status" role="alert">
                 <span aria-hidden="true">⚠</span>
@@ -18,7 +28,9 @@
         }
     </div>
 
-    <div class="board" role="grid" aria-label="Chess board">
+    <div class="board @(_isMate ? "game-over" : null)"
+         role="grid"
+         aria-label="@(_isMate && Winner is { } winningColour ? $"Chess board. Checkmate. {winningColour} wins." : "Chess board")">
     @for (var rank = 7; rank >= 0; rank--)
     {
         var r = rank;
@@ -29,7 +41,7 @@
             var piece = _grid[r][f];
             var isDark = (f + r) % 2 == 0;
 
-            <div class="square @(isDark ? "dark" : "light") @(IsCheckedKing(piece) ? "in-check" : null)"
+            <div class="square @(isDark ? "dark" : "light") @(IsCheckedKing(piece) ? (_isMate ? "in-check checkmated-king" : "in-check") : null) @(IsWinningKing(piece) ? "winning-king" : null)"
                  role="gridcell"
                  aria-label="@SquareLabel(square, piece)"
                  @key="square"
@@ -49,7 +61,7 @@
                 @if (piece != '\0')
                 {
                     <span class="piece @(char.IsUpper(piece) ? "white" : "black")"
-                          draggable="true"
+                          draggable="@(_isMate ? "false" : "true")"
                           @ondragstart="() => OnDragStart(square)"
                           aria-label="@PieceName(piece)">
                         @Glyph(piece)
@@ -65,6 +77,14 @@
     private char[][] _grid = Fen.ToGrid(Fen.StartPosition);
     private string? _dragFrom;
     private Colour? _colourInCheck;
+    private bool _isMate;
+
+    private Colour? Winner => !_isMate ? null : _colourInCheck switch
+    {
+        Colour.White => Colour.Black,
+        Colour.Black => Colour.White,
+        _ => null
+    };
 
     protected override void OnInitialized()
     {
@@ -83,9 +103,14 @@
         var snapshot = Store.Snapshot;
         _grid = Fen.ToGrid(snapshot.Fen);
         _colourInCheck = snapshot.ColourInCheck;
+        _isMate = snapshot.IsMate;
     }
 
-    private void OnDragStart(string square) => _dragFrom = square;
+    private void OnDragStart(string square)
+    {
+        if (!_isMate)
+            _dragFrom = square;
+    }
 
     private void OnDrop(string target)
     {
@@ -93,7 +118,7 @@
         _dragFrom = null;
 
         // Ignore no-op drops; the engine is the source of truth for everything else.
-        if (from is null || from == target)
+        if (_isMate || from is null || from == target)
             return;
 
         // Fire-and-forget intent. We do NOT move the piece here — the board only
@@ -113,8 +138,21 @@
         _ => false
     };
 
-    private string SquareLabel(string square, char piece) =>
-        IsCheckedKing(piece) ? $"{square}, {PieceName(piece)}, in check" : square;
+    private bool IsWinningKing(char piece) => Winner switch
+    {
+        Colour.White => piece == 'K',
+        Colour.Black => piece == 'k',
+        _ => false
+    };
+
+    private string SquareLabel(string square, char piece)
+    {
+        if (IsWinningKing(piece))
+            return $"{square}, {PieceName(piece)}, winner";
+        if (IsCheckedKing(piece))
+            return $"{square}, {PieceName(piece)}, {(_isMate ? "checkmated" : "in check")}";
+        return square;
+    }
 
     private static string Glyph(char piece) => char.ToLowerInvariant(piece) switch
     {
