@@ -156,6 +156,12 @@ public class MoveValidator : IMoveValidator
         return false;
     }
 
+    public bool IsKingInCheckMate(Position kingPos, Colour kingColour, BoardPositions board)
+    {
+        var allyPiecePositions = board.GetColourPiecePositions(kingColour);
+        return false;
+    }
+
     private static bool HasOppositeAttacker(ChessPiece? attackingPiece, Colour oppositeColour, Type[] attackingTypes)
     {
         return attackingPiece != null && attackingPiece.Colour == oppositeColour &&

@@ -371,5 +371,11 @@ namespace Chess.Core
             }
             return res.ToArray();
         }
+
+        public List<Position> GetColourPiecePositions(Colour kingColour)
+        {
+            var res = new List<Position>();
+            return res;
+        }
     }
 }

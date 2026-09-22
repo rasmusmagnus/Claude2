@@ -1,12 +1,24 @@
 @using Events
 @using Events.Commands
 @using Chess.Web.Services
+@using Chess.Core.Pieces
 @implements IDisposable
 @inject BoardStateStore Store
 @inject IEventProducer<ICommand> Commands
 @inject ILogger<ChessBoard> Logger
 
-<div class="board" role="grid" aria-label="Chess board">
+<div class="board-shell">
+    <div class="check-status-slot">
+        @if (_colourInCheck is { } colour)
+        {
+            <div class="check-status" role="alert">
+                <span aria-hidden="true">⚠</span>
+                <strong>@colour king is in check</strong>
+            </div>
+        }
+    </div>
+
+    <div class="board" role="grid" aria-label="Chess board">
     @for (var rank = 7; rank >= 0; rank--)
     {
         var r = rank;
@@ -17,9 +29,9 @@
             var piece = _grid[r][f];
             var isDark = (f + r) % 2 == 0;
 
-            <div class="square @(isDark ? "dark" : "light")"
+            <div class="square @(isDark ? "dark" : "light") @(IsCheckedKing(piece) ? "in-check" : null)"
                  role="gridcell"
-                 aria-label="@square"
+                 aria-label="@SquareLabel(square, piece)"
                  @key="square"
                  ondragenter="event.preventDefault()"
                  ondragover="event.preventDefault()"
@@ -45,12 +57,14 @@
                 }
             </div>
         }
-    }
+        }
+    </div>
 </div>
 
 @code {
     private char[][] _grid = Fen.ToGrid(Fen.StartPosition);
     private string? _dragFrom;
+    private Colour? _colourInCheck;
 
     protected override void OnInitialized()
     {
@@ -64,7 +78,12 @@
         StateHasChanged();
     });
 
-    private void Refresh() => _grid = Fen.ToGrid(Store.CurrentFen);
+    private void Refresh()
+    {
+        var snapshot = Store.Snapshot;
+        _grid = Fen.ToGrid(snapshot.Fen);
+        _colourInCheck = snapshot.ColourInCheck;
+    }
 
     private void OnDragStart(string square) => _dragFrom = square;
 
@@ -86,6 +105,16 @@
     }
 
     private static string SquareName(int file, int rank) => $"{(char)('a' + file)}{rank + 1}";
+
+    private bool IsCheckedKing(char piece) => _colourInCheck switch
+    {
+        Colour.White => piece == 'K',
+        Colour.Black => piece == 'k',
+        _ => false
+    };
+
+    private string SquareLabel(string square, char piece) =>
+        IsCheckedKing(piece) ? $"{square}, {PieceName(piece)}, in check" : square;
 
     private static string Glyph(char piece) => char.ToLowerInvariant(piece) switch
     {

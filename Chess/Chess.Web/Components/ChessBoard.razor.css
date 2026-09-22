@@ -1,8 +1,35 @@
+.board-shell {
+    width: min(80vmin, 640px);
+}
+
+.check-status-slot {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 2.5rem;
+}
+
+.check-status {
+    padding: 0.35rem 0.85rem;
+    border: 1px solid #ff6b6b;
+    border-radius: 999px;
+    background: #781f26;
+    color: #fff;
+    box-shadow: 0 0 16px rgba(255, 70, 70, 0.45);
+    letter-spacing: 0.02em;
+    animation: check-banner-in 280ms ease-out;
+}
+
+.check-status span {
+    margin-right: 0.3rem;
+}
+
 .board {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(8, 1fr);
-    width: min(80vmin, 640px);
+    width: 100%;
+    box-sizing: border-box;
     aspect-ratio: 1 / 1;
     border: 3px solid #2b2b2b;
     border-radius: 6px;
@@ -20,6 +47,30 @@
 
 .square.light { background: #ebecd0; }
 .square.dark  { background: #779556; }
+
+.square.in-check {
+    z-index: 1;
+    background: #c43d42;
+    box-shadow: inset 0 0 0 4px #ffb3b3, inset 0 0 28px #5f0000;
+    animation: check-square-pulse 1.15s ease-in-out infinite;
+}
+
+.square.in-check::before {
+    content: "";
+    position: absolute;
+    inset: 8%;
+    border: 4px solid rgba(255, 235, 235, 0.9);
+    border-radius: 50%;
+    box-shadow: 0 0 12px 5px rgba(255, 32, 32, 0.8);
+    pointer-events: none;
+    animation: check-ring 1.15s ease-out infinite;
+}
+
+.square.in-check .piece {
+    position: relative;
+    z-index: 2;
+    animation: king-shake 650ms ease-in-out infinite;
+}
 
 .piece {
     font-size: min(9vmin, 4.2rem);
@@ -50,3 +101,40 @@
 /* Label colour flips with the square so it stays legible. */
 .square.light .coord { color: #779556; }
 .square.dark .coord  { color: #ebecd0; }
+
+@keyframes check-banner-in {
+    from { opacity: 0; transform: translateY(0.4rem) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes check-square-pulse {
+    0%, 100% { filter: brightness(0.9); }
+    50%      { filter: brightness(1.25); }
+}
+
+@keyframes check-ring {
+    0%   { opacity: 0.95; transform: scale(0.75); }
+    70%, 100% { opacity: 0; transform: scale(1.2); }
+}
+
+@keyframes king-shake {
+    0%, 100% { transform: translateX(0) rotate(0); }
+    20%      { transform: translateX(-3px) rotate(-3deg); }
+    40%      { transform: translateX(3px) rotate(3deg); }
+    60%      { transform: translateX(-2px) rotate(-2deg); }
+    80%      { transform: translateX(2px) rotate(2deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .check-status,
+    .square.in-check,
+    .square.in-check::before,
+    .square.in-check .piece {
+        animation: none;
+    }
+
+    .square.in-check::before {
+        opacity: 1;
+        transform: none;
+    }
+}

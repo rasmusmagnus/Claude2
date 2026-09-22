@@ -123,12 +123,13 @@ public class Board
         var isEnPassantCapture = piece is Pawn && command.Move.To == EnPassantSquare;
         MakeMove(command.Move, isQueenSideCastlingMove, isKingSideCastlingMove, isDoublePawnMove, isEnPassantCapture);
         _producer.SubmitEvent(new BoardUpdateEvent(ToFen()));
-        if (IsInCheck(out var colour))
+        if (IsInCheck(out var colour, out var isMate))
             _producer.SubmitEvent(new CheckEvent(colour!.Value));
     }
 
-    private bool IsInCheck(out Colour? colour)
+    private bool IsInCheck(out Colour? colour, out bool isMate)
     {
+        isMate = false;
         colour = null;
         var isWhiteInCheck =
             MoveValidator.IsBoardInCheck(Positions.GetKingPosition(Colour.White), Colour.White, Positions);

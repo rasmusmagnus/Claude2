@@ -1,16 +1,14 @@
 using System.Text;
+using Chess.Core.Pieces;
 using Events;
 using Events.Events;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace Chess.Web.Services;
 
 /// <summary>
 /// The UI-facing view of the game. It does no chess logic: it only listens to
-/// <see cref="BoardUpdateEvent"/>s that the core domain emits and remembers the
-/// positions it has seen so the board can render and so the state can be
-/// exported ("flushed") for building unit tests.
+/// game events that the core domain emits, remembers the positions it has seen,
+/// and exposes transient UI state such as which king is in check.
 ///
 /// A single background reader drains the event bus (a channel hands each message
 /// to exactly one reader, so this is the one place that reads it) and fans the
@@ -22,6 +20,8 @@ public sealed class BoardStateStore : BackgroundService
     private readonly ILogger<BoardStateStore> _logger;
     private readonly object _gate = new();
     private readonly List<string> _history = new();
+    private string _currentFen = Fen.StartPosition;
+    private Colour? _colourInCheck;
 
     public BoardStateStore(IEventConsumer<IGameEvent> events, ILogger<BoardStateStore> logger)
     {
@@ -33,7 +33,22 @@ public sealed class BoardStateStore : BackgroundService
     /// The current position as FEN. Defaults to the start position so the board
     /// renders something before the core has emitted its first update.
     /// </summary>
-    public string CurrentFen { get; private set; } = Fen.StartPosition;
+    public string CurrentFen
+    {
+        get { lock (_gate) return _currentFen; }
+    }
+
+    /// <summary>The colour reported by the latest check event, if any.</summary>
+    public Colour? ColourInCheck
+    {
+        get { lock (_gate) return _colourInCheck; }
+    }
+
+    /// <summary>Atomically captures the board and its associated check state.</summary>
+    public (string Fen, Colour? ColourInCheck) Snapshot
+    {
+        get { lock (_gate) return (_currentFen, _colourInCheck); }
+    }
 
     /// <summary>Snapshot of the FENs observed so far (for the debug/export panel).</summary>
     public IReadOnlyList<string> History
@@ -56,8 +71,16 @@ public sealed class BoardStateStore : BackgroundService
                     // ping; ignore FEN-less updates so rendering keeps its default.
                     if (string.IsNullOrWhiteSpace(update.BoardFenNotation))
                         break;
-                    CurrentFen = update.BoardFenNotation;
-                    lock (_gate) _history.Add(update.BoardFenNotation);
+                    lock (_gate)
+                    {
+                        _currentFen = update.BoardFenNotation;
+                        _colourInCheck = null;
+                        _history.Add(update.BoardFenNotation);
+                    }
+                    Changed?.Invoke();
+                    break;
+                case CheckEvent check:
+                    lock (_gate) _colourInCheck = check.ColourInCheck;
                     Changed?.Invoke();
                     break;
             }
