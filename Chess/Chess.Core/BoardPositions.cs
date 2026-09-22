@@ -372,9 +372,19 @@ namespace Chess.Core
             return res.ToArray();
         }
 
-        public List<Position> GetColourPiecePositions(Colour kingColour)
+        public List<Position> GetColourPiecePositions(Colour colour)
         {
             var res = new List<Position>();
+            for (int file = 0; file < 8; file++)
+            {
+                for (int rank = 1; rank < 9; rank++)
+                {
+                    var pos = new Position(file, rank);
+                    var piece = this[pos];
+                    if (piece != null && piece.Colour == colour)
+                        res.Add(pos);
+                }
+            }
             return res;
         }
     }

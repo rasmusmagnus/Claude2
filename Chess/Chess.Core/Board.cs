@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using System.Numerics;
 using Chess.Core.Pieces;
 using Events;
 using Events.Commands;
@@ -124,12 +123,11 @@ public class Board
         MakeMove(command.Move, isQueenSideCastlingMove, isKingSideCastlingMove, isDoublePawnMove, isEnPassantCapture);
         _producer.SubmitEvent(new BoardUpdateEvent(ToFen()));
         if (IsInCheck(out var colour, out var isMate))
-            _producer.SubmitEvent(new CheckEvent(colour!.Value));
+            _producer.SubmitEvent(new CheckEvent(colour!.Value, isMate));
     }
 
     private bool IsInCheck(out Colour? colour, out bool isMate)
     {
-        isMate = false;
         colour = null;
         var isWhiteInCheck =
             MoveValidator.IsBoardInCheck(Positions.GetKingPosition(Colour.White), Colour.White, Positions);
@@ -139,14 +137,15 @@ public class Board
         if(isWhiteInCheck)
         {
             colour = Colour.White;
+            isMate = MoveValidator.IsKingInCheckMate(Positions.GetKingPosition(Colour.White), Colour.White, this);
             return true;
         }
         else if (isBlackInCheck)
         {
-            colour = Colour.Black;
+            isMate = MoveValidator.IsKingInCheckMate(Positions.GetKingPosition(Colour.Black), Colour.Black, this);            
             return true;
         }
-
+        isMate = false;
         return false;
     }
 

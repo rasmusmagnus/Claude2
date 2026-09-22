@@ -156,16 +156,35 @@ public class MoveValidator : IMoveValidator
         return false;
     }
 
-    public bool IsKingInCheckMate(Position kingPos, Colour kingColour, BoardPositions board)
-    {
-        var allyPiecePositions = board.GetColourPiecePositions(kingColour);
-        return false;
-    }
-
     private static bool HasOppositeAttacker(ChessPiece? attackingPiece, Colour oppositeColour, Type[] attackingTypes)
     {
         return attackingPiece != null && attackingPiece.Colour == oppositeColour &&
                attackingTypes.Contains(attackingPiece.GetType());
+    }
+
+    public static bool IsKingInCheckMate(Position kingPos, Colour kingColour, Board board)
+    {
+        var allyPiecePositions = board.Positions.GetColourPiecePositions(kingColour);
+
+        foreach (var pos in allyPiecePositions)
+        {
+            var piece = board.Positions[pos];
+
+            var moves = piece!.GetPossibleMoves(pos);
+            foreach (var move in moves)
+            {
+                var moveCommand = new MakeMoveCommand(new Move(pos, move));
+                if (IsNotViablePieceMove(moveCommand, board, piece))
+                {
+                    continue;
+                }
+
+                if (!LeavesMovingColourInCheck(moveCommand, board, piece))
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     private static bool IsPieceInTheWay(MakeMoveCommand command, Board board, ChessPiece piece)
