@@ -23,6 +23,7 @@ public sealed class BoardStateStore : BackgroundService
     private string _currentFen = Fen.StartPosition;
     private Colour? _colourInCheck;
     private bool _isMate;
+    private PromotingEvent? _promotion;
 
     public BoardStateStore(IEventConsumer<IGameEvent> events, ILogger<BoardStateStore> logger)
     {
@@ -45,10 +46,10 @@ public sealed class BoardStateStore : BackgroundService
         get { lock (_gate) return _colourInCheck; }
     }
 
-    /// <summary>Atomically captures the board and its associated check state.</summary>
-    public (string Fen, Colour? ColourInCheck, bool IsMate) Snapshot
+    /// <summary>Atomically captures the board and its associated transient state.</summary>
+    public (string Fen, Colour? ColourInCheck, bool IsMate, PromotingEvent? Promotion) Snapshot
     {
-        get { lock (_gate) return (_currentFen, _colourInCheck, _isMate); }
+        get { lock (_gate) return (_currentFen, _colourInCheck, _isMate, _promotion); }
     }
 
     /// <summary>Snapshot of the FENs observed so far (for the debug/export panel).</summary>
@@ -67,6 +68,17 @@ public sealed class BoardStateStore : BackgroundService
         {
             switch (evt)
             {
+                case NewGameEvent newGame:
+                    lock (_gate)
+                    {
+                        _currentFen = newGame.Fen;
+                        _colourInCheck = null;
+                        _isMate = false;
+                        _promotion = null;
+                        _history.Clear();
+                    }
+                    Changed?.Invoke();
+                    break;
                 case BoardUpdateEvent update:
                     // The engine emits an empty update on startup as a "ready"
                     // ping; ignore FEN-less updates so rendering keeps its default.
@@ -77,6 +89,7 @@ public sealed class BoardStateStore : BackgroundService
                         _currentFen = update.BoardFenNotation;
                         _colourInCheck = null;
                         _isMate = false;
+                        _promotion = null;
                         _history.Add(update.BoardFenNotation);
                     }
                     Changed?.Invoke();
@@ -86,6 +99,13 @@ public sealed class BoardStateStore : BackgroundService
                     {
                         _colourInCheck = check.ColourInCheck;
                         _isMate = check.IsMate;
+                    }
+                    Changed?.Invoke();
+                    break;
+                case PromotingEvent promotion:
+                    lock (_gate)
+                    {
+                        _promotion = promotion;
                     }
                     Changed?.Invoke();
                     break;

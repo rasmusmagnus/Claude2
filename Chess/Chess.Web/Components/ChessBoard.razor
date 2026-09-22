@@ -1,7 +1,9 @@
 @using Events
 @using Events.Commands
+@using Events.Events
 @using Chess.Web.Services
 @using Chess.Core.Pieces
+@using Chess.Shared
 @implements IDisposable
 @inject BoardStateStore Store
 @inject IEventProducer<ICommand> Commands
@@ -9,6 +11,14 @@
 
 <div class="board-shell">
     <div class="check-status-slot">
+        @if (!_isMate)
+        {
+            <div class="turn-status @(_movingColour == Colour.White ? "white" : "black")"
+                 aria-live="polite">
+                <span class="turn-dot" aria-hidden="true"></span>
+                <span><strong>@_movingColour</strong> to move</span>
+            </div>
+        }
         @if (_isMate && Winner is { } winner)
         {
             <div class="game-result" role="alert">
@@ -28,9 +38,9 @@
         }
     </div>
 
-    <div class="board @(_isMate ? "game-over" : null)"
+    <div class="board @(_movingColour == Colour.White ? "turn-white" : "turn-black") @(_isMate ? "game-over" : null) @(_promotion is not null ? "awaiting-promotion" : null)"
          role="grid"
-         aria-label="@(_isMate && Winner is { } winningColour ? $"Chess board. Checkmate. {winningColour} wins." : "Chess board")">
+         aria-label="@BoardAriaLabel">
     @for (var rank = 7; rank >= 0; rank--)
     {
         var r = rank;
@@ -61,7 +71,7 @@
                 @if (piece != '\0')
                 {
                     <span class="piece @(char.IsUpper(piece) ? "white" : "black")"
-                          draggable="@(_isMate ? "false" : "true")"
+                          draggable="@(_isMate || _promotion is not null ? "false" : "true")"
                           @ondragstart="() => OnDragStart(square)"
                           aria-label="@PieceName(piece)">
                         @Glyph(piece)
@@ -69,6 +79,29 @@
                 }
             </div>
         }
+        }
+        @if (_promotion is { } promotion)
+        {
+            <div class="promotion-picker @(promotion.Colour == Colour.White ? "white" : "black")"
+                 style="@PromotionStyle(promotion)"
+                 role="dialog"
+                 aria-label="Choose a piece to promote the pawn on @promotion.Pos">
+                <span class="promotion-prompt">Promote pawn</span>
+                @foreach (var option in PromotionOptions)
+                {
+                    var promotionPiece = PromotionPiece(option, promotion.Colour);
+                    <button type="button"
+                            class="promotion-option"
+                            disabled="@_promotionSubmitted"
+                            title="Promote to @option"
+                            aria-label="Promote pawn to @option"
+                            @onclick="() => PromoteTo(option)">
+                        <span class="piece @(promotion.Colour == Colour.White ? "white" : "black")" aria-hidden="true">
+                            @Glyph(promotionPiece)
+                        </span>
+                    </button>
+                }
+            </div>
         }
     </div>
 </div>
@@ -78,6 +111,11 @@
     private string? _dragFrom;
     private Colour? _colourInCheck;
     private bool _isMate;
+    private Colour _movingColour = Colour.White;
+    private PromotingEvent? _promotion;
+    private bool _promotionSubmitted;
+    private static readonly PromoteOptions[] PromotionOptions =
+        [PromoteOptions.Queen, PromoteOptions.Rook, PromoteOptions.Bishop, PromoteOptions.Knight];
 
     private Colour? Winner => !_isMate ? null : _colourInCheck switch
     {
@@ -102,13 +140,17 @@
     {
         var snapshot = Store.Snapshot;
         _grid = Fen.ToGrid(snapshot.Fen);
+        _movingColour = MovingColourFromFen(snapshot.Fen);
         _colourInCheck = snapshot.ColourInCheck;
         _isMate = snapshot.IsMate;
+        if (_promotion != snapshot.Promotion)
+            _promotionSubmitted = false;
+        _promotion = snapshot.Promotion;
     }
 
     private void OnDragStart(string square)
     {
-        if (!_isMate)
+        if (!_isMate && _promotion is null)
             _dragFrom = square;
     }
 
@@ -118,7 +160,7 @@
         _dragFrom = null;
 
         // Ignore no-op drops; the engine is the source of truth for everything else.
-        if (_isMate || from is null || from == target)
+        if (_isMate || _promotion is not null || from is null || from == target)
             return;
 
         // Fire-and-forget intent. We do NOT move the piece here — the board only
@@ -129,7 +171,48 @@
         Commands.SubmitEvent(new MakeMoveCommand(move));
     }
 
+    private void PromoteTo(PromoteOptions option)
+    {
+        if (_promotion is null || _promotionSubmitted)
+            return;
+
+        _promotionSubmitted = true;
+        Logger.LogInformation("Submitting promotion choice {Option}", option);
+        Commands.SubmitEvent(new PromoteToCommand(option));
+    }
+
+    private static string PromotionStyle(PromotingEvent promotion)
+    {
+        var column = promotion.Pos.File - 'a' + 1;
+        return $"--promotion-column: {column};";
+    }
+
+    private static char PromotionPiece(PromoteOptions option, Colour colour)
+    {
+        var piece = option switch
+        {
+            PromoteOptions.Queen => 'q',
+            PromoteOptions.Rook => 'r',
+            PromoteOptions.Bishop => 'b',
+            PromoteOptions.Knight => 'n',
+            _ => throw new ArgumentOutOfRangeException(nameof(option), option, null)
+        };
+        return colour == Colour.White ? char.ToUpperInvariant(piece) : piece;
+    }
+
     private static string SquareName(int file, int rank) => $"{(char)('a' + file)}{rank + 1}";
+
+    private string BoardAriaLabel => _isMate && Winner is { } winningColour
+        ? $"Chess board. Checkmate. {winningColour} wins."
+        : $"Chess board. {_movingColour} to move.";
+
+    private static Colour MovingColourFromFen(string fen)
+    {
+        var fields = fen.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return fields.Length > 1 && fields[1].Equals("b", StringComparison.OrdinalIgnoreCase)
+            ? Colour.Black
+            : Colour.White;
+    }
 
     private bool IsCheckedKing(char piece) => _colourInCheck switch
     {

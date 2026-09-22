@@ -55,6 +55,7 @@ public class Board
         WhiteCastlingState = castlingStates.white;
         BlackCastlingState = castlingStates.black;
         stateHistory.Add(ToFen());
+        _producer.SubmitEvent(new NewGameEvent(ToFen()));
     }
 
     public async Task RunAsync(CancellationToken token)
@@ -76,8 +77,45 @@ public class Board
                     HandleMoveCommand(moveCommand);
                     break;
                 }
+                case NewGameCommand newGameCommand:
+                {
+                    HandleNewGameCommand(newGameCommand);
+                    break;
+                }
+                case PromoteToCommand promoteToCommand:
+                {
+                    HandlePromoteToCommand(promoteToCommand);
+                    break;
+                }
             }
         }
+    }
+
+    private void HandlePromoteToCommand(PromoteToCommand promoteToCommand)
+    {
+        Positions.FinalizePromote(promoteToCommand.Option);
+        var fen = ToFen();
+        stateHistory.Add(fen);
+        _producer.SubmitEvent(new BoardUpdateEvent(fen));
+        if (IsInCheck(out var colour, out var isMate))
+            _producer.SubmitEvent(new CheckEvent(colour!.Value, isMate));
+    }
+
+    private void HandleNewGameCommand(NewGameCommand newGameCommand)
+    {
+        ResetState();
+    }
+
+    private void ResetState()
+    {
+        Positions = new BoardPositions(StartBoardFen);
+        stateHistory = new List<string>();
+        MovingColour = GetTurnFromFen(StartBoardFen);
+        var castlingStates = GetCaslingStatesFromFen(StartBoardFen);
+        WhiteCastlingState = castlingStates.white;
+        BlackCastlingState = castlingStates.black;
+        stateHistory.Add(ToFen());
+        _producer.SubmitEvent(new NewGameEvent(ToFen()));
     }
 
     private void ProgressTurn()
@@ -116,12 +154,23 @@ public class Board
         if (!_moveValidator.Validate(command, piece, this, isQueenSideCastlingMove, isKingSideCastlingMove))
             return;
 
+        var isPromotingMove = false;
+
+        if (Positions[command.Move.From] is Pawn pawn && (command.Move.To.Rank == 1 || command.Move.To.Rank == 8))
+        {
+            _producer.SubmitEvent(new PromotingEvent(pawn.Colour, command.Move.To));
+            isPromotingMove = true;
+        }
+
         var isDoublePawnMove = piece is Pawn && (command.Move.From - command.Move.To == (0, 2) ||
                                                  command.Move.From - command.Move.To == (0, -2));
 
         var isEnPassantCapture = piece is Pawn && command.Move.To == EnPassantSquare;
-        MakeMove(command.Move, isQueenSideCastlingMove, isKingSideCastlingMove, isDoublePawnMove, isEnPassantCapture);
+        MakeMove(command.Move, isQueenSideCastlingMove, isKingSideCastlingMove, isDoublePawnMove, isEnPassantCapture, isPromotingMove);
+        if (isPromotingMove)
+            return;
         _producer.SubmitEvent(new BoardUpdateEvent(ToFen()));
+
         if (IsInCheck(out var colour, out var isMate))
             _producer.SubmitEvent(new CheckEvent(colour!.Value, isMate));
     }
@@ -142,6 +191,7 @@ public class Board
         }
         else if (isBlackInCheck)
         {
+            colour = Colour.Black;
             isMate = MoveValidator.IsKingInCheckMate(Positions.GetKingPosition(Colour.Black), Colour.Black, this);            
             return true;
         }
@@ -196,9 +246,14 @@ public class Board
     }
 
     public void MakeMove(IChessMove move, bool isQueenSideCastlingMove, bool isKingSideCastlingMove,
-        bool isDoublePawnMove, bool isEnPassantCapture)
+        bool isDoublePawnMove, bool isEnPassantCapture, bool isPromotingMove)
     {
-        if (isQueenSideCastlingMove || isKingSideCastlingMove)
+        if (isPromotingMove)
+        {
+            Positions.PreparePromote(move);
+            EnPassantSquare = null;
+        }
+        else if (isQueenSideCastlingMove || isKingSideCastlingMove)
         {
             Positions.MovePiecesForCastling(move, isQueenSideCastlingMove, isKingSideCastlingMove);
             EnPassantSquare = null;
@@ -222,7 +277,6 @@ public class Board
             Positions.MovePieces(move);
             EnPassantSquare = null;
         }
-
 
         ProgressTurn();
         if (TryGetPieceAtPosition(move.To, out var piece))
@@ -254,7 +308,8 @@ public class Board
             }
         }
 
-        stateHistory.Add(ToFen());
+        if (!isPromotingMove)
+            stateHistory.Add(ToFen());
     }
 
     public string ToFen()

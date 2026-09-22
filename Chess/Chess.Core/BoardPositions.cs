@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Chess.Core.Pieces;
+using Chess.Shared;
 using Events;
 
 namespace Chess.Core
@@ -7,6 +8,8 @@ namespace Chess.Core
     public class BoardPositions
     {
         private readonly ChessPiece?[][] _state;
+        private Position? _promotingPos;
+        private Colour? _promotingColour;
 
         private BoardPositions(ChessPiece?[][] state)
         {
@@ -386,6 +389,42 @@ namespace Chess.Core
                 }
             }
             return res;
+        }
+
+        public void PreparePromote(IChessMove move)
+        {
+            var fromPiece = this[move.From]
+                ?? throw new InvalidOperationException("Cannot promote from an empty square.");
+            this[move.From] = null;
+            _promotingPos = move.To;
+            _promotingColour = fromPiece.Colour;
+        }
+
+        public void FinalizePromote(PromoteOptions option)
+        {
+            ChessPiece piece;
+            switch (option)
+            {
+                case PromoteOptions.None:
+                    throw new ArgumentNullException(nameof(option));
+                case PromoteOptions.Rook:
+                    piece = new Rook(_promotingColour!.Value);
+                    break;
+                case PromoteOptions.Queen:
+                    piece = new Queen(_promotingColour!.Value);
+                    break;
+                case PromoteOptions.Bishop:
+                    piece = new Bishop(_promotingColour!.Value);
+                    break;
+                case PromoteOptions.Knight:
+                    piece = new Knight(_promotingColour!.Value);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(option), option, null);
+            }
+            this[_promotingPos!.Value] = piece;
+            _promotingPos = null;
+            _promotingColour = null;
         }
     }
 }
