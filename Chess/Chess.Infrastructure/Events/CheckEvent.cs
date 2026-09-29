@@ -2,7 +2,7 @@
 
 namespace Events.Events;
 
-public readonly record struct CheckEvent(Colour ColourInCheck, bool IsMate) : IGameEvent
+public readonly record struct CheckEvent(Colour ColourInCheck) : IGameEvent
 {
     
 }

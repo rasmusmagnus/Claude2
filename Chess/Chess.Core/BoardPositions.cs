@@ -141,16 +141,20 @@ namespace Chess.Core
             return result[..^1];
         }
 
-        public void MovePieces(IChessMove move)
+        public bool MovePieces(IChessMove move)
         {
             var fromPiece = this[move.From];
+            var pieceAtTo = this[move.To];
             Debug.Assert(fromPiece != null);
             this[move.From] = null;
             this[move.To] = fromPiece;
             Debug.Assert(this[move.From] == null);
+            if (pieceAtTo != null || fromPiece is Pawn)
+                return true;
+            return false;
         }
 
-        public void MovePiecesUnderEnPassantAttack(IChessMove move)
+        public bool MovePiecesUnderEnPassantAttack(IChessMove move)
         {
             var from = move.From;
             var to = move.To;
@@ -158,7 +162,7 @@ namespace Chess.Core
             var unitDir = (0, dir.Item2 / Math.Abs(dir.Item2));
             var targetPawnPos = to + unitDir;
             this[targetPawnPos] = null;
-            MovePieces(move);
+            return MovePieces(move);
         }
 
         public void MovePiecesForCastling(IChessMove move, bool isQueenSideCastlingMove, bool isKingSideCastlingMove)

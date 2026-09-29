@@ -22,7 +22,7 @@ public sealed class BoardStateStore : BackgroundService
     private readonly List<string> _history = new();
     private string _currentFen = Fen.StartPosition;
     private Colour? _colourInCheck;
-    private bool _isMate;
+    private GameResult _gameResult = GameResult.None;
     private PromotingEvent? _promotion;
 
     public BoardStateStore(IEventConsumer<IGameEvent> events, ILogger<BoardStateStore> logger)
@@ -47,9 +47,9 @@ public sealed class BoardStateStore : BackgroundService
     }
 
     /// <summary>Atomically captures the board and its associated transient state.</summary>
-    public (string Fen, Colour? ColourInCheck, bool IsMate, PromotingEvent? Promotion) Snapshot
+    public (string Fen, Colour? ColourInCheck, GameResult GameResult, PromotingEvent? Promotion) Snapshot
     {
-        get { lock (_gate) return (_currentFen, _colourInCheck, _isMate, _promotion); }
+        get { lock (_gate) return (_currentFen, _colourInCheck, _gameResult, _promotion); }
     }
 
     /// <summary>Snapshot of the FENs observed so far (for the debug/export panel).</summary>
@@ -73,7 +73,7 @@ public sealed class BoardStateStore : BackgroundService
                     {
                         _currentFen = newGame.Fen;
                         _colourInCheck = null;
-                        _isMate = false;
+                        _gameResult = GameResult.None;
                         _promotion = null;
                         _history.Clear();
                     }
@@ -88,7 +88,6 @@ public sealed class BoardStateStore : BackgroundService
                     {
                         _currentFen = update.BoardFenNotation;
                         _colourInCheck = null;
-                        _isMate = false;
                         _promotion = null;
                         _history.Add(update.BoardFenNotation);
                     }
@@ -98,7 +97,14 @@ public sealed class BoardStateStore : BackgroundService
                     lock (_gate)
                     {
                         _colourInCheck = check.ColourInCheck;
-                        _isMate = check.IsMate;
+                    }
+                    Changed?.Invoke();
+                    break;
+                case GameEndedEvent gameEnded:
+                    lock (_gate)
+                    {
+                        _gameResult = gameEnded.Result;
+                        _promotion = null;
                     }
                     Changed?.Invoke();
                     break;

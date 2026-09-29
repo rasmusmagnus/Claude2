@@ -50,14 +50,11 @@ public class BoardTests
         var promoting = Assert.IsType<PromotingEvent>(await eventReader.ReadAsync());
         Assert.Equal(Colour.White, promoting.Colour);
         Assert.Equal(new Position('a', 8), promoting.Pos);
-        Assert.Single(board.stateHistory);
 
         commands.SubmitEvent(new PromoteToCommand(PromoteOptions.Queen));
 
         var update = Assert.IsType<BoardUpdateEvent>(await eventReader.ReadAsync());
         Assert.StartsWith("Q6k/8/8/8/8/8/8/7K b", update.BoardFenNotation);
-        Assert.Equal(2, board.stateHistory.Count);
-        Assert.Equal(update.BoardFenNotation, board.stateHistory[^1]);
 
         cancellation.Cancel();
         try

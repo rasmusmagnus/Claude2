@@ -90,6 +90,21 @@
     letter-spacing: 0.12em;
 }
 
+.game-result.draw-result {
+    border-color: #74777c;
+    background: linear-gradient(135deg, #34373b, #55595e);
+    color: #d0d1d2;
+    box-shadow: 0 0 14px rgba(90, 93, 98, 0.4);
+    animation: none;
+}
+
+.draw-result .draw-mark {
+    color: #a9abad;
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
 .board {
     position: relative;
     display: grid;
@@ -138,6 +153,19 @@
     text-shadow: 20px 40px #ff7676, -30px 95px #70d6ff, 45px 150px #caff70;
     pointer-events: none;
     animation: confetti-fall 2.4s linear infinite;
+}
+
+.board.game-over.draw {
+    border-color: #686b70;
+    box-shadow: 0 0 0 2px #3f4246, 0 10px 30px rgba(0, 0, 0, 0.42);
+}
+
+.board.game-over.draw::after {
+    content: none;
+}
+
+.board.game-over.draw .square {
+    filter: grayscale(0.7) brightness(0.82);
 }
 
 .board.game-over .piece {
