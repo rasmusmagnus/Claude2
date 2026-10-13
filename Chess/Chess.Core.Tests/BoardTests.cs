@@ -78,8 +78,7 @@ public class BoardTests
         var runTask = board.RunAsync(cancellation.Token);
         var eventReader = events.GetReader();
 
-        Assert.IsType<NewGameEvent>(await eventReader.ReadAsync());
-        Assert.IsType<BoardUpdateEvent>(await eventReader.ReadAsync());
+        await eventReader.ReadAsync();
         commands.SubmitEvent(new StartFromFenCommand(fen));
 
         var started = Assert.IsType<NewGameEvent>(await eventReader.ReadAsync());

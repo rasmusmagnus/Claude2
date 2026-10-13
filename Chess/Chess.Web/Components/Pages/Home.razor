@@ -77,7 +77,7 @@
         StateHasChanged();
     });
 
-    // The UI submits intentions; the engine remains responsible for changing state.
+    // The only two things the UI does: submit a move-affecting command…
     private void NewGame()
     {
         _fenError = null;
@@ -97,7 +97,7 @@
         Commands.SubmitEvent(new StartFromFenCommand(normalized));
     }
 
-    // Export the state observed from engine events for test authoring.
+    // …and flush/export the observed state for test authoring.
     private void Flush() => _export = Store.Flush();
 
     public void Dispose() => Store.Changed -= OnStoreChanged;

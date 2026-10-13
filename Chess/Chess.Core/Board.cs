@@ -102,8 +102,48 @@ public class Board
                     HandlePromoteToCommand(promoteToCommand);
                     break;
                 }
+                case GetViablePieceMovesCommand command:
+                {
+                    HandleGetViablePieceMovesCommand(command);
+                    break;
+                }
             }
         }
+    }
+
+    private void HandleGetViablePieceMovesCommand(GetViablePieceMovesCommand getCommand)
+    {
+        List<Position>? result = null; 
+        var piece = Positions[getCommand.PiecePosition];
+        if (piece == null)
+            return;
+        var moves = piece.GetPossibleMoves(getCommand.PiecePosition);
+
+        foreach (var pos in moves)
+        {
+            var command = new MakeMoveCommand(new Move(getCommand.PiecePosition, pos));
+            var isKingSideCastlingMove = false;
+            var isQueenSideCastlingMove = false;
+            var startPos = piece.Colour == Colour.White ? King.WhiteStartPosition : King.BlackStartPosition;
+            if (command.Move.From != startPos)
+            {
+                isKingSideCastlingMove = false;
+                isQueenSideCastlingMove = false;
+            }
+            else if (command.Move.To.File == startPos.File - 2)
+            {
+                isQueenSideCastlingMove = true;
+            }
+            else if (command.Move.To.File == startPos.File + 2)
+            {
+                isKingSideCastlingMove = true;
+            }
+
+            if (!_moveValidator.Validate(command, piece, this, isQueenSideCastlingMove, isKingSideCastlingMove))
+                continue;
+            (result ?? []).Add(command.Move.To);
+        }
+        _producer.SubmitEvent(new ViablePieceMovesEvent(result?.ToArray()));
     }
 
     private void HandlePromoteToCommand(PromoteToCommand promoteToCommand)
