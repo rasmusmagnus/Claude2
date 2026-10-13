@@ -43,6 +43,54 @@ html, body {
 .btn.danger { border-color: #7d3b3b; background: #6b3232; }
 .btn.danger:hover { background: #7d3b3b; }
 
+.fen-seed {
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid #4b4946;
+}
+
+.fen-seed label {
+    display: block;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.fen-seed .hint { margin: 0.35rem 0 0.6rem; }
+
+.fen-input {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 0.75rem;
+    resize: vertical;
+    border: 1px solid #555;
+    border-radius: 6px;
+    padding: 0.55rem;
+    background: #1f1e1c;
+    color: #e9e9e9;
+    font: 0.75rem/1.4 ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+
+.fen-input:focus {
+    border-color: #8ba56e;
+    outline: 2px solid rgb(139 165 110 / 25%);
+}
+
+.fen-input[aria-invalid="true"] { border-color: #b96767; }
+.fen-error { margin: -0.35rem 0 0.75rem; color: #e19a9a; font-size: 0.8rem; }
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 .history {
     list-style: decimal;
     margin: 0;

@@ -23,6 +23,22 @@
             <button class="btn" @onclick="Flush">Flush state</button>
         </div>
 
+        <form class="fen-seed" @onsubmit="StartFromFen" @onsubmit:preventDefault>
+            <label for="fen-input">Start from FEN</label>
+            <p class="hint">Paste a complete six-field position to begin a new game from it.</p>
+            <textarea id="fen-input" class="fen-input" rows="3" @bind="_seedFen"
+                      aria-describedby="fen-help" aria-invalid="@(_fenError is not null)"></textarea>
+            @if (_fenError is not null)
+            {
+                <p id="fen-help" class="fen-error" role="alert">@_fenError</p>
+            }
+            else
+            {
+                <span id="fen-help" class="visually-hidden">Enter all six FEN fields.</span>
+            }
+            <button class="btn" type="submit">Load position</button>
+        </form>
+
         <h2>Exported state</h2>
         <p class="hint">Copy this into a <code>[Theory]</code> to seed a unit test.
             It is also written to the server console.</p>
@@ -46,6 +62,8 @@
 @code {
     private IReadOnlyList<string> _history = System.Array.Empty<string>();
     private string _export = "";
+    private string _seedFen = Fen.StartPosition;
+    private string? _fenError;
 
     protected override void OnInitialized()
     {
@@ -59,10 +77,27 @@
         StateHasChanged();
     });
 
-    // The only two things the UI does: submit a move-affecting command…
-    private void NewGame() => Commands.SubmitEvent(new NewGameCommand());
+    // The UI submits intentions; the engine remains responsible for changing state.
+    private void NewGame()
+    {
+        _fenError = null;
+        Commands.SubmitEvent(new NewGameCommand());
+    }
 
-    // …and flush/export the observed state for test authoring.
+    private void StartFromFen()
+    {
+        if (!Fen.TryNormalize(_seedFen, out var normalized, out var error))
+        {
+            _fenError = error;
+            return;
+        }
+
+        _fenError = null;
+        _seedFen = normalized;
+        Commands.SubmitEvent(new StartFromFenCommand(normalized));
+    }
+
+    // Export the state observed from engine events for test authoring.
     private void Flush() => _export = Store.Flush();
 
     public void Dispose() => Store.Changed -= OnStoreChanged;

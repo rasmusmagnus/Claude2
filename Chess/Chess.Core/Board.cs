@@ -25,9 +25,9 @@ public class Board
     private int _FullMoves = 1;
     private int _lastCaptureFullMove = 1;
 
-    public BoardPositions Positions;
+    public BoardPositions Positions = null!;
 
-    private CountDictionary _stateHistory;
+    private CountDictionary _stateHistory = null!;
 
     private class CountDictionary
     {
@@ -56,13 +56,7 @@ public class Board
         _moveValidator = moveValidator;
         _producer = producer;
         _consumer = consumer;
-        Positions = new BoardPositions(fenString);
-        _stateHistory = new ();
-        MovingColour = GetTurnFromFen(fenString);
-        var castlingStates = GetCaslingStatesFromFen(fenString);
-        WhiteCastlingState = castlingStates.white;
-        BlackCastlingState = castlingStates.black;
-        _stateHistory.Add(ToFen());
+        InitializeState(fenString);
     }
 
     public Board(IMoveValidator moveValidator, IEventProducer<IGameEvent> producer, IEventConsumer<ICommand> consumer)
@@ -70,13 +64,7 @@ public class Board
         _moveValidator = moveValidator;
         _producer = producer;
         _consumer = consumer;
-        Positions = new BoardPositions(StartBoardFen);
-        _stateHistory = new ();
-        MovingColour = GetTurnFromFen(StartBoardFen);
-        var castlingStates = GetCaslingStatesFromFen(StartBoardFen);
-        WhiteCastlingState = castlingStates.white;
-        BlackCastlingState = castlingStates.black;
-        _stateHistory.Add(ToFen());
+        InitializeState(StartBoardFen);
         _producer.SubmitEvent(new NewGameEvent(ToFen()));
     }
 
@@ -104,6 +92,11 @@ public class Board
                     HandleNewGameCommand(newGameCommand);
                     break;
                 }
+                case StartFromFenCommand startFromFenCommand:
+                {
+                    HandleStartFromFenCommand(startFromFenCommand);
+                    break;
+                }
                 case PromoteToCommand promoteToCommand:
                 {
                     HandlePromoteToCommand(promoteToCommand);
@@ -116,6 +109,7 @@ public class Board
     private void HandlePromoteToCommand(PromoteToCommand promoteToCommand)
     {
         Positions.FinalizePromote(promoteToCommand.Option);
+        ProgressTurn(true, false);
         var fen = ToFen();
         if (_stateHistory.Add(fen))
         {
@@ -123,7 +117,7 @@ public class Board
             return;
         }
         _producer.SubmitEvent(new BoardUpdateEvent(fen));
-        if (IsInCheckOrStaleMate(MovingColour, out var colour, out var isMate, out var isStaleMate))
+        if (IsInCheckOrStaleMate(MovingColour == Colour.Black ? Colour.White : Colour.Black, out var colour, out var isMate, out var isStaleMate))
         {
             if(!isStaleMate)
                 _producer.SubmitEvent(new CheckEvent(colour!.Value));
@@ -143,20 +137,51 @@ public class Board
         ResetState();
     }
 
+    private void HandleStartFromFenCommand(StartFromFenCommand command)
+    {
+        if (!Fen.TryNormalize(command.Fen, out var normalized, out _))
+            return;
+
+        ResetState(normalized);
+    }
+
     private void ResetState()
     {
-        Positions = new BoardPositions(StartBoardFen);
-        _stateHistory = new ();
-        MovingColour = GetTurnFromFen(StartBoardFen);
-        var castlingStates = GetCaslingStatesFromFen(StartBoardFen);
-        WhiteCastlingState = castlingStates.white;
-        BlackCastlingState = castlingStates.black;
-        _stateHistory.Add(ToFen());
+        ResetState(StartBoardFen);
+    }
+
+    private void ResetState(string fen)
+    {
+        InitializeState(fen);
         _producer.SubmitEvent(new NewGameEvent(ToFen()));
     }
 
-    private void ProgressTurn(bool moveWasCaptureOrPawnMove)
+    private void InitializeState(string fen)
     {
+        if (!Fen.TryNormalize(fen, out var normalized, out var error))
+            throw new ArgumentException(error, nameof(fen));
+
+        var fields = normalized.Split(' ');
+        Positions = new BoardPositions(normalized);
+        _stateHistory = new ();
+        MovingColour = GetTurnFromFen(normalized);
+        var castlingStates = GetCastlingStatesFromFen(normalized);
+        WhiteCastlingState = castlingStates.white;
+        BlackCastlingState = castlingStates.black;
+        EnPassantSquare = fields[3] == "-" ? null : fields[3].ToPosition();
+        _halfMoves = int.Parse(fields[4]);
+        _FullMoves = int.Parse(fields[5]);
+        _lastCaptureFullMove = _FullMoves - (_halfMoves / 2);
+        _stateHistory.Add(ToFen());
+    }
+
+    private void ProgressTurn(bool moveWasCaptureOrPawnMove, bool isPromotingMove)
+    {
+        if (isPromotingMove)
+        {
+            return;
+        }
+
         if (moveWasCaptureOrPawnMove)
         {
             _halfMoves = 0;
@@ -267,13 +292,13 @@ public class Board
 
     }
 
-    private Colour GetTurnFromFen(string fenString)
+    private static Colour GetTurnFromFen(string fenString)
     {
         var turnHolderString = fenString.Split(" ")[1].ToLower();
         return turnHolderString == "w" ? Colour.White : Colour.Black;
     }
 
-    public (CastlingState white, CastlingState black) GetCaslingStatesFromFen(string fen)
+    private static (CastlingState white, CastlingState black) GetCastlingStatesFromFen(string fen)
     {
         var whiteRes = new CastlingState();
         var blackResult = new CastlingState();
@@ -301,16 +326,6 @@ public class Board
         }
 
         return (whiteRes, blackResult);
-    }
-
-    private Board(string producer)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Board GetBoardFromFen(string fen)
-    {
-        return new Board(fen);
     }
 
     public void MakeMove(IChessMove move, bool isQueenSideCastlingMove, bool isKingSideCastlingMove,
@@ -347,7 +362,7 @@ public class Board
             EnPassantSquare = null;
         }
 
-        ProgressTurn(wasCaptureMove);
+        ProgressTurn(wasCaptureMove, isPromotingMove);
         if (TryGetPieceAtPosition(move.To, out var piece))
         {
             if (piece is King)

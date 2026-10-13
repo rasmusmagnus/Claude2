@@ -67,6 +67,35 @@ public class BoardTests
         }
     }
 
+    [Fact]
+    public async Task StartFromFenPublishesSeededPosition()
+    {
+        const string fen = "4k3/8/8/8/4P3/8/8/4K3 b - e3 17 42";
+        var commands = new EventDistributor<ICommand>();
+        var events = new EventDistributor<IGameEvent>();
+        var board = new Board(new MoveValidator(), events, commands);
+        using var cancellation = new CancellationTokenSource();
+        var runTask = board.RunAsync(cancellation.Token);
+        var eventReader = events.GetReader();
+
+        Assert.IsType<NewGameEvent>(await eventReader.ReadAsync());
+        Assert.IsType<BoardUpdateEvent>(await eventReader.ReadAsync());
+        commands.SubmitEvent(new StartFromFenCommand(fen));
+
+        var started = Assert.IsType<NewGameEvent>(await eventReader.ReadAsync());
+        Assert.Equal(fen, started.Fen);
+
+        cancellation.Cancel();
+        try
+        {
+            await runTask;
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancellation may be observed by the loop condition or the pending channel read.
+        }
+    }
+
     private class ConsumerFixture() : IEventConsumer<ICommand>
     {
         public ChannelReader<ICommand> GetReader()
